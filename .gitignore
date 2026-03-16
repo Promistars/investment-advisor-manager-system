@@ -1,0 +1,42 @@
+# 忽略 Python 缓存文件
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# 💡 忽略所有本地生成的财务数据和缓存（千万别传这些！）
+financial_data/
+all_indices_data/
+dividend_data/
+realtime_data/
+fundamental_data/
+
+# 💡 忽略所有的配置文件和本地数据库日志
+stock_config.json
+account_config.json
+commentaries.json
+*.json
+commentaries.json
+
+# 忽略系统隐藏文件
+.DS_Store
+Thumbs.db
+
+# 🛑 数据库与本地缓存文件 (最重要！)
+*.db
+*.sqlite
+*.sqlite3
+*.csv
+*.xlsx
+*.txt
+
+# 🛑 环境变量与机密配置 (防止 API Key 或密码泄露)
+.env
+secrets.toml
+.streamlit/secrets.toml
+
+# 📦 虚拟环境
+venv/
+env/
+.venv/
+.conda/
