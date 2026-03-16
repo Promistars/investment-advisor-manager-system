@@ -21,6 +21,50 @@ import streamlit.components.v1 as components
 # ==========================================
 st.set_page_config(page_title="数据看板", page_icon="📊", layout="wide", initial_sidebar_state="auto")
 
+# ==========================================
+# 📱 移动端 (手机/Pad) 专属 UI 适配引擎
+# ==========================================
+st.markdown("""
+    <style>
+        /* 当屏幕宽度小于 768px 时（绝大多数手机的竖屏和部分横屏），自动激活以下规则 */
+        @media (max-width: 768px) {
+            /* 1. 极致拓宽视野：压缩 Streamlit 默认的巨大左右留白，把屏幕边缘还给数据 */
+            .block-container {
+                padding-top: 1.5rem !important;
+                padding-left: 0.8rem !important;
+                padding-right: 0.8rem !important;
+                padding-bottom: 1.5rem !important;
+            }
+            
+            /* 2. 优雅的字体降级：缩小各级标题，防止在手机上出现丑陋的折行 */
+            h1 { font-size: 1.5rem !important; }
+            h2 { font-size: 1.3rem !important; }
+            h3 { font-size: 1.1rem !important; }
+            h4, h5 { font-size: 1rem !important; }
+            
+            /* 3. 指标卡片 (Metric) 瘦身：缩小大数字，让三个指标在手机上也能从容并排 */
+            div[data-testid="stMetricValue"] {
+                font-size: 1.2rem !important;
+            }
+            div[data-testid="stMetricLabel"] {
+                font-size: 0.8rem !important;
+            }
+            
+            /* 4. 优化我们之前写的 JS 吸顶魔法：在手机上紧贴顶部，不浪费一寸垂直空间 */
+            .client-sticky-header, .my-sticky-header {
+                top: 0rem !important; 
+                padding-top: 5px !important;
+                padding-bottom: 5px !important;
+            }
+            
+            /* 5. 隐藏图表右上角繁杂的工具栏（手机上根本点不到，还会挡住折线） */
+            .modebar {
+                display: none !important;
+            }
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # 0.5 检测：不仅检查文件是否存在，还要检查文件大小是否大于 0
 file_path = "financial_data/中国平安.csv"
 
