@@ -1,0 +1,18 @@
+# --- Web 框架与前端 UI ---
+streamlit==1.55.0
+streamlit-quill==0.0.3
+
+# --- 数据处理与计算 ---
+pandas==2.3.3
+numpy==2.4.2
+
+# --- 交互式图表 ---
+plotly==6.6.0
+
+# --- 金融数据接口 ---
+akshare==1.18.30
+baostock==0.8.9
+
+# --- 数据解析依赖 (AkShare 与 Pandas 读取特定格式所需) ---
+openpyxl==3.1.5
+lxml==6.0.2

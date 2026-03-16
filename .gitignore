@@ -29,6 +29,7 @@ Thumbs.db
 *.csv
 *.xlsx
 *.txt
+!requirements.txt
 
 # 🛑 环境变量与机密配置 (防止 API Key 或密码泄露)
 .env
