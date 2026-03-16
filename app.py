@@ -5,10 +5,9 @@ import pandas as pd
 import db_manager as db
 from datetime import datetime
 import json
-
-st.set_page_config(page_title="量化投资门户", page_icon="🏦", layout="wide")
-
 import streamlit as st
+
+st.set_page_config(page_title="账号管理门户", page_icon="🏦", layout="wide")
 
 # 0. 检测：不仅检查文件是否存在，还要检查文件大小是否大于 0
 file_path = "financial_data/中国平安.csv"
@@ -39,7 +38,7 @@ with st.sidebar:
     st.markdown("### 🧭 系统导航")
     # 这里的文件名必须跟你实际的文件名完全一致，label 则是你希望显示的中文
     st.page_link("app.py", label="🏠 系统控制台")
-    st.page_link("pages/analytics.py", label="📈 量化分析看板")
+    st.page_link("pages/analytics.py", label="📈 投资分析看板")
     st.markdown("---") # 画一条分割线，让布局更美观
 
 db.init_db()
@@ -170,7 +169,7 @@ if not st.session_state.logged_in:
     st.markdown("<br><br><br>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns([1, 1.5, 1])
     with col2:
-        st.markdown("<h2 style='text-align: center;'>🔒 私募级量化交易系统</h2>", unsafe_allow_html=True)
+        st.markdown("<h2 style='text-align: center;'>🔒 投资交易系统</h2>", unsafe_allow_html=True)
         tab_login, tab_register = st.tabs(["🔑 身份登录", "📝 新用户注册"])
         with tab_login:
             with st.form("login_form"):

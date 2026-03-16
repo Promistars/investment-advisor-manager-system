@@ -94,7 +94,7 @@ with st.sidebar:
     st.markdown("### 🧭 系统导航")
     # 这里的文件名必须跟你实际的文件名完全一致，label 则是你希望显示的中文
     st.page_link("app.py", label="🏠 系统控制台")
-    st.page_link("pages/analytics.py", label="📈 量化分析看板")
+    st.page_link("pages/analytics.py", label="📈 投资分析看板")
     st.markdown("---") # 画一条分割线，让布局更美观
 
 # 💡 核心机制：检查 URL 中是否携带专属访问参数
