@@ -44,4 +44,4 @@ env/
 
 # 🛑 忽略本地服务器运维与重启脚本
 restart_all.sh
-test app.py
+test_app.py
