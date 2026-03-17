@@ -332,7 +332,6 @@ if __name__ == '__main__':
     print(f"[{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}] ⏳ 自动化抓取服务已启动！")
     print(f"🌍 锁定计算时区: {tz}")
     print(f"⏰ 任务已装载，将在每个交易日的 18:00 准时执行...")
-    print(f"👉 下一次执行时间预计为: {scheduler.get_jobs()[0].next_run_time}")
     
     try:
         # 启动调度器（程序会在这里阻塞挂起，像保安一样一直守着时间）

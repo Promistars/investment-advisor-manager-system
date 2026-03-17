@@ -19,3 +19,6 @@ lxml
 
 # --- 后台定时任务调度 ---
 apscheduler
+
+# --- “桥梁”插件，实现 Streamlit 与 JavaScript 的无缝对话 ---
+streamlit-javascript

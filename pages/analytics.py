@@ -15,6 +15,7 @@ import json
 import re
 from streamlit_quill import st_quill
 import streamlit.components.v1 as components
+from streamlit_javascript import st_javascript
 
 # ==========================================
 # 0. 页面保护、鉴权与“客户专属链接”路由
@@ -709,7 +710,7 @@ if not is_client_mode:
 
     # 持仓胶囊 (属于后台管理，向客户隐藏底牌)
     st.markdown("---")
-    st.subheader(f"📊 底层资金与持仓结构 (截至 **{snap_date_str}**)")
+    st.subheader(f"📊 持仓结构 (截至 **{snap_date_str}**)")
     bar_placeholder = st.empty()
     pie_labels, pie_values, pie_qtys = ['可用现金'], [max(snap_cash, 0)], [0.0] 
     for asset in stock_names:
@@ -806,10 +807,10 @@ if not is_client_mode:
 
 
     # ==========================================
-    # 💡 新增模块：智能业绩报酬与高水位线结算引擎
+    # 💡 新增模块：智能管理费与高水位线结算引擎
     # ==========================================
     st.markdown("---")
-    st.markdown("### 💰 业绩报酬与结算周期管理")
+    st.markdown("### 💰 管理费与结算周期管理")
     
     log_df = st.session_state.trade_log
     
@@ -859,15 +860,15 @@ if not is_client_mode:
     
     # --- 👇 核心升级：双轨制目标设定 UI ---
     st.markdown(" ") # 稍微空一行，排版更好看
-    target_mode = st.radio("🎯 设定结账目标方式", ["按约定收益率 (%)", "手动指定目标总资产 (¥)"], horizontal=True)
+    target_mode = st.radio("🎯 设定管理费结算方式", ["按约定收益率 (%)", "手动指定目标总资产 (¥)"], horizontal=True)
     
     c_fee1, c_fee2, c_fee3, c_fee4 = st.columns(4)
-    fee_ratio = c_fee2.number_input("🤝 利润分成比例 (%)", value=st.session_state.get('fee_ratio', 20.0), step=1.0)
+    fee_ratio = c_fee2.number_input("🤝 管理费 (%)", value=st.session_state.get('fee_ratio', 20.0), step=1.0)
     st.session_state['fee_ratio'] = fee_ratio
     
     # 💡 魔法切换器：根据你的选择，动态改变第一个输入框的功能！
     if target_mode == "按约定收益率 (%)":
-        target_pct = c_fee1.number_input("🎯 结账触发收益率 (%)", value=st.session_state.get('fee_target', 20.0), step=1.0)
+        target_pct = c_fee1.number_input("🎯 约定收益率 (%)", value=st.session_state.get('fee_target', 20.0), step=1.0)
         st.session_state['fee_target'] = target_pct
         # 收益率模式：系统帮你算出目标金额
         target_asset = adjusted_watermark * (1.0 + target_pct / 100.0)
@@ -879,12 +880,12 @@ if not is_client_mode:
         # 系统反推算出一个理论收益率，用于后面的展示
         target_pct = ((target_asset / adjusted_watermark) - 1.0) * 100 if adjusted_watermark > 0 else 0.0
 
-    c_fee3.metric("🚩 触发结账目标总资产", f"¥{target_asset:,.2f}", f"基数(期初+追加): ¥{adjusted_watermark:,.2f}", delta_color="off")
+    c_fee3.metric("🚩 目标总资产", f"¥{target_asset:,.2f}", f"基数(期初+追加): ¥{adjusted_watermark:,.2f}", delta_color="off")
     
     if current_asset_now >= target_asset:
         c_fee4.metric("🌟 当前账户总资产 (已达标)", f"¥{current_asset_now:,.2f}", f"+ ¥{current_asset_now - target_asset:,.2f} (溢出目标)")
     else:
-        c_fee4.metric("📈 当前账户总资产 (未达标)", f"¥{current_asset_now:,.2f}", f"- ¥{target_asset - current_asset_now:,.2f} (距结账还差)")
+        c_fee4.metric("📈 当前账户总资产 (未达标)", f"¥{current_asset_now:,.2f}", f"- ¥{target_asset - current_asset_now:,.2f} (距离目标还差)")
     
     # 强制时间重排保存机制 (保持之前的内外双轨不变)
     def add_and_save_billing(d, t, p, tot):
@@ -905,23 +906,23 @@ if not is_client_mode:
         target_watermark = target_asset
         extra_profit = current_asset_now - target_asset 
         
-        st.success(f"🎉 **收益已达标！** 当前绝对利润 ¥{period_profit:,.2f}。\n**[系统已执行截断结算]** 目标利润 (¥{agreed_profit:,.2f}) 按 {fee_ratio}% 计提，应收：**¥{fee_amount:,.2f}**。\n*(溢出的 ¥{extra_profit:,.2f} 利润不收提成，自动结转为新一期的起步利润！)*")
+        st.success(f"🎉 **收益已达标！** 当前绝对收益 ¥{period_profit:,.2f}。\n**[系统已执行截断结算]** 目标收益 (¥{agreed_profit:,.2f}) 按 {fee_ratio}% 计提，应收：**¥{fee_amount:,.2f}**。\n*(溢出的 ¥{extra_profit:,.2f} 利润不收提成，自动结转为新一期的起步利润！)*")
         
         b1, b2 = st.columns(2)
         with b1:
-            if st.button("💸 立即内扣管理费 (溢出利润滚入下期)", use_container_width=True):
+            if st.button("💸 立即内扣管理费 (溢出收益滚入下期)", use_container_width=True):
                 add_and_save_billing(pd.Timestamp(global_max_date).date(), '提取管理费(内扣)', target_watermark - fee_amount, fee_amount)
         with b2:
-            if st.button("🤝 立即外付管理费 (溢出利润滚入下期)", use_container_width=True):
-                add_and_save_billing(pd.Timestamp(global_max_date).date(), '结账重置(外付)', target_watermark, fee_amount)
+            if st.button("🤝 立即外付管理费 (溢出收益滚入下期)", use_container_width=True):
+                add_and_save_billing(pd.Timestamp(global_max_date).date(), '结算重置(外付)', target_watermark, fee_amount)
     elif period_profit > 0:
-        st.info(f"⏳ 账户最新状态正在盈利中，距离自动触发结账还差 ¥{target_asset - current_asset_now:,.2f}")
+        st.info(f"⏳ 账户最新状态正在盈利中，距离结算还差 ¥{target_asset - current_asset_now:,.2f}")
     else:
-        st.info("📉 账户最新状态处于动态水位线之下，暂无结账利润。")
+        st.info("📉 账户最新状态处于动态水位线之下，暂无结算管理费。")
 
     # 👇 时光机同步兼容双轨制
-    with st.expander("🛠️ 强制补录历史结账 (防止利润回撤错失结算点)", expanded=False):
-        st.markdown("<span style='font-size:13px; color:gray;'>即使历史最高峰溢出了约定目标，系统也会智能截断，只收取达标部分的费用，将多余利润无损继承到新周期。</span>", unsafe_allow_html=True)
+    with st.expander("🛠️ 强制补录历史结账 (防止收益回撤错失结算点)", expanded=False):
+        st.markdown("<span style='font-size:13px; color:gray;'>即使历史最高峰溢出了约定目标，系统也会智能截断，只收取达标部分的费用，将多余收益无损继承到新周期。</span>", unsafe_allow_html=True)
         
         m_col1, m_col2 = st.columns(2)
         manual_date = m_col1.date_input("📅 选择历史巅峰达标日", value=pd.Timestamp(global_max_date).date(), min_value=last_watermark_date, max_value=pd.Timestamp(global_max_date).date())
@@ -1222,8 +1223,15 @@ if not is_client_mode:
     with st.expander("🔗 获取发送给客户的专属汇报链接", expanded=False):
         st.info("💡 请选择客户打开链接时默认看到的报告维度，然后一键复制下方完整链接。")
         
-        # 💡 核心配置：在这里填入你刚才在 Ngrok 认领的固定域名（注意不要结尾的斜杠）
-        BASE_URL = "https://unintimate-armida-insensibly.ngrok-free.dev/analytics" 
+        # 🚀 魔法时刻：向浏览器前端发送 JS 指令，获取当前的真实根域名
+        current_origin = st_javascript("window.location.origin")
+        
+        # ⚠️ 容错保护：因为 JS 和 Python 之间有微小的延迟，刚刷新时可能返回 0 或 None
+        if not current_origin or current_origin == 0:
+            current_origin = "http://112.49.20.151:29996"  # 填入你现在的 IP 作为临时兜底
+            
+        # 完美的动态 URL 拼接
+        BASE_URL = f"{current_origin}/analytics"
         
         link_view_mode = st.radio("设置链接的默认视角：", ["月报视图", "季报视图", "年报视图"], horizontal=True)
         view_code = "month"
