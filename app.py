@@ -54,7 +54,7 @@ if st.session_state.logged_in and st.session_state.current_user is None:
 # ==========================================
 # 0. 轻量级引擎：加入“复权平差系统”的精准计算
 # ==========================================
-@st.cache_data(ttl=60)
+@st.cache_data(ttl=3600*12) # 0.5天缓存，减少重复计算压力
 def get_stock_data_for_pnl():
     """提取最新的股票历史数据，并包含复权和不复权价格"""
     DATA_DIR = "financial_data"
@@ -175,7 +175,7 @@ if not st.session_state.logged_in:
             with st.form("login_form"):
                 log_user = st.text_input("👤 用户名")
                 log_pwd = st.text_input("🔑 密码", type="password")
-                if st.form_submit_button("登 录 ➔", use_container_width=True):
+                if st.form_submit_button("登 录 ➔", width="stretch"):
                     if db.verify_user(log_user, log_pwd):
                         st.session_state.logged_in = True
                         st.session_state.current_user = log_user
@@ -187,7 +187,7 @@ if not st.session_state.logged_in:
                 reg_user = st.text_input("👤 设置用户名")
                 reg_pwd = st.text_input("🔑 设置密码", type="password")
                 reg_pwd2 = st.text_input("🔑 确认密码", type="password")
-                if st.form_submit_button("注 册 ➔", use_container_width=True):
+                if st.form_submit_button("注 册 ➔", width="stretch"):
                     if reg_user == "" or reg_pwd == "": st.warning("⚠️ 不能为空！")
                     elif reg_pwd != reg_pwd2: st.error("❌ 两次密码不一致！")
                     else:
@@ -205,11 +205,11 @@ st.sidebar.markdown(f"### 👤 当前用户：{current_user}")
 with st.sidebar.expander("⚙️ 修改密码"):
     old_pwd = st.text_input("原密码", type="password")
     new_pwd = st.text_input("新密码", type="password")
-    if st.button("确认修改", use_container_width=True):
+    if st.button("确认修改", width="stretch"):
         if db.update_password(current_user, old_pwd, new_pwd): st.success("✅ 修改成功！")
         else: st.error("❌ 原密码错误！")
 
-if st.sidebar.button("🚪 退出安全登录", use_container_width=True):
+if st.sidebar.button("🚪 退出安全登录", width="stretch"):
     st.session_state.logged_in = False
     st.session_state.current_user = None
     st.session_state.delete_confirm = None
@@ -235,11 +235,11 @@ with col_list:
                 with st.container(border=True):
                     st.warning(f"⚠️ 确定要永久删除账户 **【{acc_name}】** 及其所有流水吗？此操作不可恢复！")
                     c_yes, c_no = st.columns(2)
-                    if c_yes.button("🚨 确认删除", key=f"yes_{acc_name}", type="primary", use_container_width=True):
+                    if c_yes.button("🚨 确认删除", key=f"yes_{acc_name}", type="primary", width="stretch"):
                         db.delete_account(current_user, acc_name)
                         st.session_state.delete_confirm = None
                         st.rerun()
-                    if c_no.button("取消", key=f"no_{acc_name}", use_container_width=True):
+                    if c_no.button("取消", key=f"no_{acc_name}", width="stretch"):
                         st.session_state.delete_confirm = None
                         st.rerun()
                 continue
@@ -268,12 +268,12 @@ with col_list:
                 with c_action:
                     # 💡 按钮上下堆叠排布
                     st.markdown("<br>", unsafe_allow_html=True) # 稍微往下垫一点，对齐左侧排版
-                    if st.button("进入看板 ➔", key=f"go_{acc_name}", type="primary", use_container_width=True):
+                    if st.button("进入看板 ➔", key=f"go_{acc_name}", type="primary", width="stretch"):
                         db.update_account_access(current_user, acc_name) 
                         st.session_state.active_acc = acc_name
                         st.switch_page("pages/analytics.py")
                         
-                    if st.button("🗑️ 删除账户", key=f"del_{acc_name}", use_container_width=True):
+                    if st.button("🗑️ 删除账户", key=f"del_{acc_name}", width="stretch"):
                         st.session_state.delete_confirm = acc_name
                         st.rerun()
 
@@ -281,7 +281,7 @@ with col_add:
     st.subheader("➕ 创建新账号")
     with st.container(border=True):
         new_acc = st.text_input("请输入账号名称", key="new_acc_input")
-        if st.button("创建并直接进入", use_container_width=True):
+        if st.button("创建并直接进入", width="stretch"):
             clean_acc_name = new_acc.strip()
             if clean_acc_name == "": st.warning("⚠️ 账号名称不能为空！")
             else:

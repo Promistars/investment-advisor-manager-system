@@ -259,7 +259,7 @@ for file in csv_files:
 
 stock_names = list(stock_info.values()) # 传给前端下拉菜单的股票池
 
-@st.cache_data
+@st.cache_data(ttl=3600*12) # 12小时缓存，减少重复读取和计算压力
 def load_base_data(stock_files, benchmark):
     # 💡 核心修复：现在系统会去 INDEX_DIR (all_indices_data) 里面找基准文件了！
     index_path = os.path.join(INDEX_DIR, f"{benchmark}.csv")
@@ -1389,11 +1389,13 @@ account_lifespan = (today - account_start_date).days
 available_options = []
 if account_lifespan >= 30:
     available_options.append(f"月度报告 (上月: {first_day_prev_month.strftime('%m')}月)")
-if account_lifespan >= 90:
-    available_options.append(f"季度报告 (上季: Q{prev_quarter})")
-    available_options.append("自定义区间") # 满一季度解锁自定义
-if account_lifespan >= 365:
-    available_options.append(f"年度报告 (去年: {today.year - 1}年)")
+    if account_lifespan >= 90:
+        available_options.append(f"季度报告 (上季: Q{prev_quarter})")
+        if account_lifespan >= 365:
+         available_options.append(f"年度报告 (去年: {today.year - 1}年)")
+
+        available_options.append("自定义区间") # 满一季度解锁自定义
+
 
 # 如果账户不满 30 天，没有任何选项可以看，直接拦截并提示
 if not available_options:
