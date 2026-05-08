@@ -1483,9 +1483,10 @@ c_info1.markdown(f"*(实际有效数据区间：**{actual_start_str}** 至 **{ac
 c_info2.markdown(f"<div style='text-align: right;'><span style='color:gray;font-size:14px;'>⚖️ 该区间净充值/流入本金: <b>¥{period_net_inflow:,.2f}</b></span></div>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
+# 第一行：三个收益率指标（比例一致）
 col1, col2, col3 = st.columns(3)
-col1.metric("💰 期末真实总资产", f"¥{c_latest['总持仓市值']:,.2f}", f"{portfolio_change:+.2f}% (区间回报)", delta_color="inverse", 
-            help="该区间最后一日的账户总资产估值。区间回报 = (期末资产 - 期初资产 - 期间净转入) / 成本基数")
+col1.metric("📊 区间回报", f"{portfolio_change:+.2f}%",
+            help="区间回报 = (期末资产 - 期初资产 - 期间净转入) / 成本基数，反映该区间内账户的真实盈亏比例。")
 col2.metric("📈 " + BENCHMARK_NAME + " 同期表现", f"{c_latest[f'{BENCHMARK_NAME}收盘价']:,.2f}", f"{index_change:+.2f}% (基准涨跌)", delta_color="inverse", 
             help="同一时间区间内，" + BENCHMARK_NAME + "指数的累计涨跌幅，作为大盘基准参考。")
 col3.metric("🔥 区间超额收益", f"{alpha:+.2f}%", f"{alpha:+.2f}% (相较大盘)", delta_color="inverse", 
@@ -1507,18 +1508,12 @@ daily_rf = 0.02 / 252
 excess_returns = daily_returns - daily_rf
 sharpe_ratio = (excess_returns.mean() / daily_volatility) * np.sqrt(252) if daily_volatility > 0 else 0.0
 
+# 第二行：总资产 + 风险指标
 col_r1, col_r2, col_r3 = st.columns(3)
-col_r1.metric("📉 区间最大回撤", f"{max_drawdown:.2f}%", f"{max_drawdown:.2f}% (极值跌幅)", delta_color="inverse", 
+col_r1.metric("💰 期末真实总资产", f"¥{c_latest['总持仓市值']:,.2f}",
+              help="该区间最后一日的账户总资产估值（现金 + 持仓市值）。")
+col_r2.metric("📉 区间最大回撤", f"{max_drawdown:.2f}%", f"{max_drawdown:.2f}% (极值跌幅)", delta_color="inverse", 
               help="该区间内，账户净值从最高点回落到最低点的最大跌幅，用于衡量面临的极端风险。")
-
-# 💡 只有在非“月度报告”的情况下才显示年化收益率
-if "月度报告" not in view_mode:
-    col_r2.metric("🚀 年化收益率", f"{annual_return:.2f}%", f"{annual_return:+.2f}% (预期折算)", delta_color="inverse", 
-                  help="将当前区间的绝对收益率，按实际日历天数线性折算为一整年的预期收益率。")
-else:
-    # 月度报告中，col_r2 留空占位
-    col_r2.empty() 
-
 if sharpe_ratio > 1:
     col_r3.metric("⚖️ 夏普比率 (Sharpe)", f"{sharpe_ratio:.2f}", 
                   help="衡量承担每单位风险所获得的超额回报。数值越高，代表经风险调整后的性价比越好（通常 >1 算优秀）。")
