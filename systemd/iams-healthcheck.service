@@ -1,0 +1,7 @@
+[Unit]
+Description=IAMS health check and recovery
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/home/muchenzhang/fnc/IAMS_1.2/iams_healthcheck.sh

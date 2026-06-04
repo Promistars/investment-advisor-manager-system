@@ -30,6 +30,74 @@ if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
 st.markdown("""
     <style>
         [data-testid="stSidebarNav"] {display: none !important;}
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+        }
+        [data-testid="stSidebar"] .stMarkdown,
+        [data-testid="stSidebar"] .stMarkdown p,
+        [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
+        [data-testid="stSidebar"] header, [data-testid="stSidebar"] label,
+        [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary,
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+        [data-testid="stSidebar"] [data-testid="stPageLink"] a,
+        [data-testid="stSidebar"] [data-testid="stPageLink"] p {
+            color: #e2e8f0 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] a,
+        [data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] p {
+            color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.15) !important; }
+        [data-testid="stSidebar"] [data-testid="stExpander"] details {
+            border: 1px solid rgba(255,255,255,0.12) !important;
+            border-radius: 8px !important;
+            background: rgba(255,255,255,0.06) !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary,
+        [data-testid="stSidebar"] [data-testid="stExpander"] summary *,
+        [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"],
+        [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
+            background: transparent !important;
+            color: #f1f5f9 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary {
+            border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] p,
+        [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stWidgetLabel"] p,
+        [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p {
+            color: #e2e8f0 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stTextInput"] input {
+            color: #0f172a !important;
+            background: #f8fafc !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stButton"] button,
+        [data-testid="stSidebar"] [data-testid="stExpanderDetails"] [data-testid="stButton"] button {
+            background-color: rgba(255,255,255,0.08) !important;
+            background: rgba(255,255,255,0.08) !important;
+            border: 1px solid rgba(255,255,255,0.18) !important;
+            color: #f1f5f9 !important;
+            box-shadow: none !important;
+            border-radius: 8px !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stButton"] button[kind="secondary"],
+        [data-testid="stSidebar"] [data-testid="stButton"] button[kind="tertiary"],
+        [data-testid="stSidebar"] [data-testid="stButton"] button:not([kind="primary"]) {
+            background-color: rgba(255,255,255,0.08) !important;
+            color: #f1f5f9 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stButton"] button:hover {
+            background-color: rgba(255,255,255,0.12) !important;
+            border-color: rgba(255,255,255,0.28) !important;
+            color: #ffffff !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stButton"] button p,
+        [data-testid="stSidebar"] [data-testid="stButton"] button span,
+        [data-testid="stSidebar"] [data-testid="stButton"] button div {
+            color: inherit !important;
+        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -205,11 +273,11 @@ st.sidebar.markdown(f"### 👤 当前用户：{current_user}")
 with st.sidebar.expander("⚙️ 修改密码"):
     old_pwd = st.text_input("原密码", type="password")
     new_pwd = st.text_input("新密码", type="password")
-    if st.button("确认修改", width="stretch"):
+    if st.button("确认修改", type="secondary", width="stretch"):
         if db.update_password(current_user, old_pwd, new_pwd): st.success("✅ 修改成功！")
         else: st.error("❌ 原密码错误！")
 
-if st.sidebar.button("🚪 退出安全登录", width="stretch"):
+if st.sidebar.button("🚪 退出安全登录", type="secondary", width="stretch"):
     st.session_state.logged_in = False
     st.session_state.current_user = None
     st.session_state.delete_confirm = None

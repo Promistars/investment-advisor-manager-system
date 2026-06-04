@@ -1,5 +1,6 @@
 # 🌌 Nova Quant | 智能投顾与全周期资产管理中枢
 
+![Version](https://img.shields.io/badge/Version-1.3.0-blue)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Framework-FF4B4B?logo=streamlit)
 ![Pandas](https://img.shields.io/badge/Pandas-Data_Processing-150458?logo=pandas)
@@ -31,9 +32,10 @@
 - **现金分红**：自动折算并"叮"声入账，充实账户可用现金储备。
 - **送股/转增**：精准计算零碎股，自动增加底层持仓数量，全程零人工干预。
 
-### 5. 🔄 双渠道容灾数据引擎 (Dual-Source Resilience)
-- **BaoStock（主渠道）**：提供前复权/不复权双路行情数据，含 PE/PB 财务指标，以及 562 个全市场宽基指数历史 K 线。
-- **AKShare（备用渠道）**：当 BaoStock 服务不可达时，系统**自动无感切换**至 AKShare 继续完成当日爬取任务，两个渠道相互热备，数据更新零中断。
+### 5. 🔄 三级容灾数据引擎 (Triple-Source Resilience)
+- **新浪日线（优先）**：个股 K 线在多数服务器环境下最稳定，新股票侧边栏录入即时走同一引擎。
+- **东财 / BaoStock（备用）**：东财 K 线可达时自动补齐；否则回退 BaoStock，并与 AKShare 分红等接口协同。
+- **项目级网络策略**：`config/network.env` + `iams_network.py` 仅作用于本项目，避免全局代理导致东财/新浪异常。
 - **增量追加模式**：每次仅拉取缺失日期的新数据，节省带宽，兼顾数据完整性。
 
 ### 6. ⚡ UI/UX 黑科技与极致交互 (Extreme UX)
@@ -83,25 +85,21 @@ streamlit run app.py
 
 ### 服务器长期部署（推荐）
 
-如果你在云服务器上部署，使用项目内置的一键重启脚本：
+**方式 A：systemd 用户服务（v1.3 推荐）**
 
 ```bash
-# 一键重启所有服务（Web 大屏 + 数据爬虫）
+# 安装并启用 Web + 爬虫 + 每小时探活（需按本机路径修改 unit 内 WorkingDirectory）
+bash setup_systemd.sh
+
+# 日常重启
 bash restart_all.sh
 ```
 
-脚本会自动：
-1. 清理旧进程，释放端口
-2. 使用 Conda 虚拟环境内的完整路径启动，确保进程在 shell 会话结束后持续驻留
-3. 将 Web 服务挂载到 `0.0.0.0:29996`，可直接通过服务器公网 IP 访问
+**方式 B：nohup 回退**
 
-```bash
-# 查看 Web 服务运行日志
-tail -f web_log.txt
+未执行 `setup_systemd.sh` 时，`restart_all.sh` 自动回退为 nohup 模式。
 
-# 查看数据爬虫运行日志
-tail -f fetch_log.txt
-```
+服务默认监听 `0.0.0.0:29996`。日志：`web_log.txt`、`fetch_log.txt`、`iams_healthcheck.log`（本地生成，不入库）。
 
 ---
 
@@ -111,9 +109,17 @@ tail -f fetch_log.txt
 ├── app.py                  # 系统大厅与登录鉴权网关
 ├── pages/
 │   └── analytics.py        # 📈 投顾分析看板与核心撮合引擎 (Main Logic)
-├── auto_fetch.py           # 🕷️ 双渠道容灾数据引擎 (BaoStock + AKShare)
+├── auto_fetch.py           # 🕷️ 定时增量抓取调度
+├── stock_fetch.py          # 📡 新浪/东财/BaoStock 统一 K 线引擎
+├── iams_network.py         # 🌐 项目级网络与东财可达性探测
+├── config/network.env      # 项目代理策略（默认直连）
+├── systemd/                # 用户级 systemd 单元模板
+├── setup_systemd.sh        # 安装 Web/爬虫/探活 timer
+├── iams_healthcheck.sh     # 每小时探活并拉起服务
+├── scripts/run_with_iams_env.sh
 ├── db_manager.py           # 💾 SQLite 数据库与 JSON 并行交互接口
-├── restart_all.sh          # 🔄 一键重启脚本（适用于服务器 24h 驻留部署）
+├── restart_all.sh          # 🔄 一键重启（优先 systemd）
+├── CHANGELOG.md            # 版本更新记录
 ├── requirements.txt        # 📦 Python 依赖清单
 ├── financial_data/         # [系统生成] 个股双路历史 K 线库 (Git Ignore)
 ├── dividend_data/          # [系统生成] 历史除权除息事件库 (Git Ignore)
@@ -128,10 +134,11 @@ tail -f fetch_log.txt
 1. **隐私安全**：所有的交易记录（`.db`）与配置清单（`.json`）均已加入 `.gitignore`，**不会上传至云端**，请放心在本地录入真实千万级实盘数据。
 2. **动态添股**：遇到新开仓的股票，无需修改代码，直接在管理员侧边栏【➕ 动态添加新股票标的】中输入中文简称，系统将自动寻址并补齐 2023 年至今的所有 K 线与分红数据。
 3. **客户展示**：点击控制台侧边栏【获取发送给客户的专属汇报链接】，将生成带有鉴权参数的 URL，直接分发给客户阅览（支持一键导出 PDF）。
-4. **数据容灾**：若 BaoStock 服务中断，`auto_fetch.py` 会自动切换至 AKShare 完成当日任务，无需人工干预。每日 18:00 后手动触发一次可即时补全最新行情：
+4. **数据容灾**：个股日线优先新浪；东财/BaoStock 自动降级。每日 18:00 后手动补抓：
    ```bash
    python -c "import auto_fetch; auto_fetch.fetch_data_now()"
    ```
+5. **版本记录**：详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

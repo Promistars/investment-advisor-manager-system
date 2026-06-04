@@ -1,0 +1,17 @@
+[Unit]
+Description=IAMS Streamlit Web (port 29996)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/muchenzhang/fnc/IAMS_1.2
+ExecStart=/home/muchenzhang/fnc/IAMS_1.2/scripts/run_with_iams_env.sh /home/muchenzhang/miniconda3/envs/IAMS/bin/streamlit run app.py --server.port 29996 --server.address 0.0.0.0
+EnvironmentFile=-/home/muchenzhang/fnc/IAMS_1.2/config/network.env
+Restart=no
+# 被管理员 kill 后由 iams-healthcheck.timer 在 1h 内拉起，避免与运维策略冲突
+StandardOutput=append:/home/muchenzhang/fnc/IAMS_1.2/web_log.txt
+StandardError=append:/home/muchenzhang/fnc/IAMS_1.2/web_log.txt
+
+[Install]
+WantedBy=default.target

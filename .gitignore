@@ -42,6 +42,7 @@ env/
 .venv/
 .conda/
 
-# 🛑 忽略本地服务器运维与重启脚本
-restart_all.sh
+# 🛑 本地日志（不入库）
+*.log
+
 test_app.py

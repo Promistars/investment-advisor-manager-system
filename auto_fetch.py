@@ -1,4 +1,9 @@
 import os
+
+from iams_network import apply_project_network_env
+
+apply_project_network_env()
+
 import pandas as pd
 from datetime import datetime, timedelta
 import baostock as bs
@@ -37,6 +42,8 @@ else:
 TX_STOCKS = {k.replace('.', ''): v for k, v in TARGET_STOCKS.items()}
 
 
+from stock_fetch import fetch_stock_kline  # noqa: E402
+
 def get_latest_trading_date_bs():
     """通过 BaoStock 探测最新交易日"""
     end_date = datetime.now().strftime("%Y-%m-%d")
@@ -49,14 +56,16 @@ def get_latest_trading_date_bs():
 
 
 def get_latest_trading_date_ak():
-    """通过 AKShare 探测最新交易日（BaoStock 不可用时的备用）"""
+    """探测最新交易日（优先新浪，避免东财 push2his）"""
     try:
-        df = ak.stock_zh_a_hist(symbol='601318', period='daily',
-                                 start_date=(datetime.now() - timedelta(days=14)).strftime('%Y%m%d'),
-                                 end_date=datetime.now().strftime('%Y%m%d'), adjust='')
-        return str(df['日期'].iloc[-1]) if not df.empty else datetime.now().strftime('%Y-%m-%d')
+        start = (datetime.now() - timedelta(days=14)).strftime("%Y-%m-%d")
+        end = datetime.now().strftime("%Y-%m-%d")
+        df_adj, _, _ = fetch_stock_kline("sh.601318", start, end)
+        if not df_adj.empty:
+            return str(df_adj["date"].iloc[-1])[:10]
     except Exception:
-        return datetime.now().strftime('%Y-%m-%d')
+        pass
+    return datetime.now().strftime("%Y-%m-%d")
 
 
 def fetch_data_now():
@@ -198,59 +207,15 @@ def fetch_data_now():
             df_exist_k = pd.DataFrame()
         fetch_end = datetime.now().strftime("%Y-%m-%d")
 
-        df_adj = pd.DataFrame()
-        df_raw_bs = pd.DataFrame()
-
-        # 主力渠道：BaoStock (含 PE/PB、前复权)
-        if bs_ok:
-            rs_adj = bs.query_history_k_data_plus(
-                bs_code,
-                "date,open,high,low,close,volume,amount,turn,pctChg,peTTM,pbMRQ",
-                start_date=fetch_start, end_date=fetch_end,
-                frequency="d", adjustflag="2"
-            )
-            data_adj = []
-            while (rs_adj.error_code == '0') & rs_adj.next():
-                data_adj.append(rs_adj.get_row_data())
-            if data_adj:
-                df_adj = pd.DataFrame(data_adj, columns=rs_adj.fields)
-
-            rs_raw = bs.query_history_k_data_plus(
-                bs_code, "date,close",
-                start_date=fetch_start, end_date=fetch_end,
-                frequency="d", adjustflag="3"
-            )
-            data_raw = []
-            while (rs_raw.error_code == '0') & rs_raw.next():
-                data_raw.append(rs_raw.get_row_data())
-            if data_raw:
-                df_raw_bs = pd.DataFrame(data_raw, columns=['date', 'raw_close'])
-
-        # 备用渠道：AKShare（BaoStock 无数据时自动切换）
-        if df_adj.empty:
-            print(f"     ⚠️ BaoStock 无数据，切换至 AKShare 备用渠道...")
-            try:
-                pure_code = bs_code.split('.')[1]
-                fetch_start_ak = fetch_start.replace('-', '')
-                fetch_end_ak = fetch_end.replace('-', '')
-                df_ak_qfq = ak.stock_zh_a_hist(symbol=pure_code, period='daily',
-                                                start_date=fetch_start_ak, end_date=fetch_end_ak, adjust='qfq')
-                df_ak_raw = ak.stock_zh_a_hist(symbol=pure_code, period='daily',
-                                                start_date=fetch_start_ak, end_date=fetch_end_ak, adjust='')
-                if not df_ak_qfq.empty:
-                    df_adj = df_ak_qfq.rename(columns={
-                        '日期': 'date', '收盘': 'close', '开盘': 'open',
-                        '最高': 'high', '最低': 'low', '成交量': 'volume',
-                        '成交额': 'amount', '换手率': 'turn', '涨跌幅': 'pctChg'
-                    })
-                    df_adj['date'] = df_adj['date'].astype(str)
-                    df_adj['peTTM'] = ''
-                    df_adj['pbMRQ'] = ''
-                if not df_ak_raw.empty:
-                    df_raw_bs = df_ak_raw[['日期', '收盘']].rename(columns={'日期': 'date', '收盘': 'raw_close'})
-                    df_raw_bs['date'] = df_raw_bs['date'].astype(str)
-            except Exception as e_ak:
-                print(f"     ❌ AKShare 备用渠道也失败: {e_ak}")
+        df_adj, df_raw_bs, channel = fetch_stock_kline(bs_code, fetch_start, fetch_end)
+        if not df_adj.empty:
+            print(f"     ✅ {channel} 成功（{len(df_adj)} 行）")
+        else:
+            from iams_network import eastmoney_kline_available
+            if not eastmoney_kline_available():
+                print("     ⚠️ 东财 push2his K 线在本机不可达，已尝试新浪/BaoStock 均失败")
+            else:
+                print("     ❌ 所有行情渠道均失败")
 
         # 数据融合与落盘
         if not df_adj.empty:

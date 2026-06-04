@@ -1,4 +1,16 @@
 # 文件2：pages/analytics.py (前后台隔离架构终极版)
+import sys
+from pathlib import Path
+
+_iams_root = Path(__file__).resolve().parent.parent
+if str(_iams_root) not in sys.path:
+    sys.path.insert(0, str(_iams_root))
+from iams_network import apply_project_network_env, eastmoney_kline_available
+
+apply_project_network_env()
+
+from stock_fetch import ingest_new_stock
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -64,6 +76,296 @@ st.markdown("""
             }
         }
     </style>
+""", unsafe_allow_html=True)
+
+# ==========================================
+# 🎨 全局 Premium 金融看板主题 CSS
+# ==========================================
+st.markdown("""
+<style>
+/* ---- 全局字体与渲染优化 ---- */
+* { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.block-container { max-width: 1400px; padding-top: 2rem !important; }
+
+/* ---- 🃏 指标卡片 Premium 升级 ---- */
+div[data-testid="stMetric"] {
+    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 1.3rem 1.5rem !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.8) inset;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+div[data-testid="stMetric"]::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+    border-radius: 16px 16px 0 0;
+}
+div[data-testid="stMetric"]:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06);
+}
+div[data-testid="stMetricLabel"] > div {
+    font-size: 0.78rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.06em !important;
+    color: #64748b !important;
+    text-transform: uppercase !important;
+}
+div[data-testid="stMetricValue"] > div {
+    font-size: 1.9rem !important;
+    font-weight: 800 !important;
+    color: #0f172a !important;
+    line-height: 1.15 !important;
+    font-variant-numeric: tabular-nums;
+}
+div[data-testid="stMetricDelta"] > div {
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    opacity: 0.9;
+}
+
+/* ---- KPI 六宫格：上下两行卡片等高、等宽 ---- */
+#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] {
+    align-items: stretch !important;
+}
+#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+    display: flex !important;
+    flex-direction: column !important;
+}
+#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+}
+#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] div[data-testid="stMetric"] {
+    width: 100% !important;
+    min-height: 142px !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+}
+#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] div[data-testid="stMetricDelta"] {
+    min-height: 1.55rem !important;
+}
+#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] div[data-testid="stMetric"]:not(:has([data-testid="stMetricDelta"]))::after {
+    content: "";
+    display: block;
+    min-height: 1.55rem;
+    flex-shrink: 0;
+}
+
+/* ---- 📑 章节标题 ---- */
+h2 { color: #0f172a !important; font-weight: 800 !important; letter-spacing: -0.02em; }
+h3 { color: #1e293b !important; font-weight: 700 !important; letter-spacing: -0.01em; }
+h4 { color: #334155 !important; font-weight: 700 !important; }
+.stSubheader > div > div { color: #1e293b !important; font-weight: 700 !important; }
+
+/* ---- 📊 Tab 标签页美化 ---- */
+div[data-testid="stTabs"] [role="tablist"] {
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 4px;
+    border: none !important;
+    gap: 2px;
+}
+div[data-testid="stTabs"] [role="tab"] {
+    border-radius: 9px !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    color: #64748b !important;
+    padding: 0.4rem 1.1rem !important;
+    border: none !important;
+    transition: all 0.2s !important;
+}
+div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
+    background: white !important;
+    color: #1e293b !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.12) !important;
+}
+
+/* ---- 🖱️ 按钮升级 ---- */
+div[data-testid="stButton"] button {
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+    transition: all 0.2s ease !important;
+}
+div[data-testid="stButton"] button[kind="primary"] {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
+    border: none !important;
+    box-shadow: 0 2px 10px rgba(99,102,241,0.4) !important;
+    color: white !important;
+}
+div[data-testid="stButton"] button[kind="primary"]:hover {
+    box-shadow: 0 6px 18px rgba(99,102,241,0.55) !important;
+    transform: translateY(-1px) !important;
+}
+div[data-testid="stButton"] button[kind="secondary"]:hover {
+    border-color: #3b82f6 !important;
+    color: #3b82f6 !important;
+}
+
+/* ---- 🗂️ 侧边栏暗色主题（文字统一浅色） ---- */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+}
+[data-testid="stSidebar"] .stMarkdown,
+[data-testid="stSidebar"] .stMarkdown p,
+[data-testid="stSidebar"] .stMarkdown li,
+[data-testid="stSidebar"] .stMarkdown small,
+[data-testid="stSidebar"] h1,
+[data-testid="stSidebar"] h2,
+[data-testid="stSidebar"] h3,
+[data-testid="stSidebar"] h4,
+[data-testid="stSidebar"] header,
+[data-testid="stSidebar"] label,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary p,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary span,
+[data-testid="stSidebar"] [data-testid="stExpander"] p,
+[data-testid="stSidebar"] [data-testid="stPageLink"] a,
+[data-testid="stSidebar"] [data-testid="stPageLink"] p {
+    color: #e2e8f0 !important;
+}
+[data-testid="stSidebar"] a {
+    color: #93c5fd !important;
+    font-weight: 600;
+    text-decoration: none;
+}
+[data-testid="stSidebar"] a:hover { color: #bfdbfe !important; }
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] {
+    background: rgba(255, 255, 255, 0.12) !important;
+    border-radius: 8px;
+}
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] a,
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] p,
+[data-testid="stSidebar"] a[aria-current="page"],
+[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"][aria-current="page"] {
+    color: #ffffff !important;
+}
+[data-testid="stSidebar"] details summary,
+[data-testid="stSidebar"] details summary * {
+    color: #f1f5f9 !important;
+}
+[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.15) !important; }
+/* 侧边栏 Expander：单层底色，避免 summary/内层再叠灰块 */
+[data-testid="stSidebar"] [data-testid="stExpander"],
+[data-testid="stSidebar"] [data-testid="stExpander"] > div {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] details {
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 8px !important;
+    background: rgba(255,255,255,0.06) !important;
+    overflow: hidden;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary,
+[data-testid="stSidebar"] [data-testid="stExpander"] summary *,
+[data-testid="stSidebar"] [data-testid="stExpander"] details[open],
+[data-testid="stSidebar"] [data-testid="stExpander"] details[open] > summary,
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"],
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] > div {
+    background: transparent !important;
+    background-color: transparent !important;
+    box-shadow: none !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] summary {
+    color: #f1f5f9 !important;
+    padding: 0.55rem 0.7rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary {
+    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
+    padding: 0.5rem 0.7rem 0.7rem !important;
+}
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] p,
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] label,
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] small,
+[data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] span,
+[data-testid="stSidebar"] [data-testid="stTextInput"] label p,
+[data-testid="stSidebar"] [data-testid="stTextInput"] [data-testid="stWidgetLabel"] p,
+[data-testid="stSidebar"] [data-testid="stCheckbox"] label p,
+[data-testid="stSidebar"] [data-testid="stCheckbox"] label span,
+[data-testid="stSidebar"] [data-testid="stCheckbox"] span,
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
+[data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
+    color: #e2e8f0 !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button,
+[data-testid="stSidebar"] [data-testid="stExpanderDetails"] [data-testid="stButton"] button {
+    background-color: rgba(255,255,255,0.08) !important;
+    border: 1px solid rgba(255,255,255,0.18) !important;
+    color: #f1f5f9 !important;
+    box-shadow: none !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="secondary"],
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="tertiary"],
+[data-testid="stSidebar"] [data-testid="stButton"] button:not([kind="primary"]) {
+    background-color: rgba(255,255,255,0.08) !important;
+    color: #f1f5f9 !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button:hover {
+    background-color: rgba(255,255,255,0.12) !important;
+    border-color: rgba(255,255,255,0.28) !important;
+    color: #ffffff !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button p,
+[data-testid="stSidebar"] [data-testid="stButton"] button span,
+[data-testid="stSidebar"] [data-testid="stButton"] button div {
+    color: inherit !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] {
+    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
+    border: none !important;
+    color: #ffffff !important;
+    box-shadow: 0 2px 8px rgba(99,102,241,0.35) !important;
+}
+[data-testid="stSidebar"] [data-testid="stTextInput"] input,
+[data-testid="stSidebar"] [data-testid="stDateInput"] input {
+    color: #0f172a !important;
+    background: #f8fafc !important;
+}
+[data-testid="stSidebar"] [data-testid="stTextInput"] input::placeholder {
+    color: #64748b !important;
+}
+
+/* ---- 📋 数据表格 ---- */
+div[data-testid="stDataFrame"] {
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
+}
+
+/* ---- 📦 Container / Expander 圆角（仅主内容区，不影响侧边栏） ---- */
+section[data-testid="stMain"] [data-testid="stExpander"] {
+    border-radius: 12px !important;
+    border-color: #e2e8f0 !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"] > div {
+    border-radius: 14px !important;
+}
+
+/* ---- 分割线 ---- */
+hr { border-color: #e2e8f0 !important; margin: 1.5rem 0 !important; }
+
+/* ---- Radio 按钮（视图切换器）---- */
+div[data-testid="stRadio"] label {
+    font-weight: 600 !important;
+    font-size: 0.88rem !important;
+}
+</style>
 """, unsafe_allow_html=True)
 
 # 0.5 检测：不仅检查文件是否存在，还要检查文件大小是否大于 0
@@ -173,7 +475,7 @@ else:
                             background-color: var(--background-color, #ffffff) !important;
                             padding-top: 15px !important;
                             padding-bottom: 10px !important;
-                            border-bottom: 1px solid rgba(128,128,128,0.2) !important;
+                            border-bottom: 1px solid #e2e8f0 !important;
                         }
                     `;
                     doc.head.appendChild(style);
@@ -331,155 +633,30 @@ if not is_client_mode:
     # 👇 ================= 新增：动态股票爬取引擎 ================= 👇
     st.sidebar.markdown("---")
     with st.sidebar.expander("➕ 动态添加新股票标的", expanded=False):
-        st.markdown("<small>输入准确的A股中文简称，系统将自动寻址并抓取 2023 年至今的数据。</small>", unsafe_allow_html=True)
+        st.caption("输入准确的 A 股中文简称，系统将自动寻址并抓取 2023 年至今的数据。")
         new_stock_name = st.text_input("股票简称 (如: 招商银行)")
         
-        if st.button("🚀 联网抓取并入库", width="stretch"):
+        force_refetch = st.checkbox("已存在时强制重新抓取", value=False)
+        if st.button("🚀 联网抓取并入库", type="primary", width="stretch"):
             if not new_stock_name:
                 st.warning("名称不能为空")
-            elif f"{new_stock_name}.csv" in os.listdir(DATA_DIR):
-                st.info(f"【{new_stock_name}】的底层数据已存在，无需重复抓取。")
+            elif f"{new_stock_name}.csv" in os.listdir(DATA_DIR) and not force_refetch:
+                st.info(f"【{new_stock_name}】数据已存在。勾选「强制重新抓取」可更新到最新。")
             else:
-                with st.spinner(f"正在全市场匹配【{new_stock_name}】的代码..."):
+                with st.spinner(f"正在抓取【{new_stock_name}】2023 年至今行情（优先新浪，立即入库）..."):
                     try:
-                        # 1. 调用 AkShare 获取A股全市场代码本
-                        stock_info_df = ak.stock_info_a_code_name()
-                        match = stock_info_df[stock_info_df['name'] == new_stock_name]
-                        
-                        if match.empty:
-                            st.error(f"❌ 查无此股：未找到名为 '{new_stock_name}' 的A股公司，请检查是否有错别字。")
+                        ok, msg = ingest_new_stock(new_stock_name.strip())
+                        if ok:
+                            st.success(f"🎉 {msg} 已加入自动更新序列。")
+                            time.sleep(1.2)
+                            st.cache_data.clear()
+                            st.rerun()
                         else:
-                            # 2. 解析代码并转换为 BaoStock 格式
-                            # 👇 核心修复：把 'symbol' 改成 'code'，并做个双重保险
-                            if 'code' in match.columns:
-                                raw_code = match.iloc[0]['code']
-                            elif 'symbol' in match.columns:
-                                raw_code = match.iloc[0]['symbol']
-                            else:
-                                raw_code = str(match.iloc[0].values[0]) # 兜底盲抓
-                            # 2. 解析代码并转换为 BaoStock 格式
-                            if raw_code.startswith('6'): bs_code = f"sh.{raw_code}"
-                            elif raw_code.startswith('0') or raw_code.startswith('3'): bs_code = f"sz.{raw_code}"
-                            elif raw_code.startswith('8') or raw_code.startswith('4') or raw_code.startswith('9'): bs_code = f"bj.{raw_code}"
-                            else: bs_code = f"sh.{raw_code}" # 兜底
-                            
-                            st.info(f"✅ 匹配成功：代码为 {bs_code}。正在启动底层抓取引擎...")
-                            
-                            # 3. 启动 BaoStock 引擎实时拉取数据 (双路并行版)
-                            bs.login()
-                            
-                            # 🎯 抓取 A 路：前复权数据 (用于系统分析和净值图表，平滑除权断层)
-                            rs_adj = bs.query_history_k_data_plus(
-                                bs_code,
-                                "date,open,high,low,close,volume,amount,turn,pctChg,peTTM,pbMRQ",
-                                start_date="2023-01-01", 
-                                end_date=datetime.now().strftime("%Y-%m-%d"),
-                                frequency="d",
-                                adjustflag="2" # 前复权
-                            )
-                            
-                            # 🎯 抓取 B 路：不复权数据 (专门提取真实收盘价，用于录入台单价)
-                            rs_raw = bs.query_history_k_data_plus(
-                                bs_code,
-                                "date,close",
-                                start_date="2023-01-01", 
-                                end_date=datetime.now().strftime("%Y-%m-%d"),
-                                frequency="d",
-                                adjustflag="3" # 修正：BaoStock 中 3 才是真实不复权价
-                            )
-                            
-                            data_adj = []
-                            while (rs_adj.error_code == '0') & rs_adj.next():
-                                data_adj.append(rs_adj.get_row_data())
-                                
-                            data_raw = []
-                            while (rs_raw.error_code == '0') & rs_raw.next():
-                                data_raw.append(rs_raw.get_row_data())
-                            bs.logout()
-                            
-                            if not data_adj or not data_raw:
-                                st.error(f"❌ 抓取失败：接口未返回 {new_stock_name} 的完整双路数据。")
-                            else:
-                                # 4. 数据融合与对齐
-                                df_adj = pd.DataFrame(data_adj, columns=rs_adj.fields)
-                                df_raw = pd.DataFrame(data_raw, columns=['date', 'raw_close'])
-                                
-                                # 将两路数据按日期合并
-                                df_k = pd.merge(df_adj, df_raw, on='date', how='left')
-                                
-                                # 标准化重命名
-                                df_k.rename(columns={
-                                    'date': '日期', 
-                                    'close': f'{new_stock_name}收盘价',
-                                    'open': '开盘价', 'high': '最高价', 'low': '最低价',
-                                    'volume': '成交量', 'amount': '成交额', 'turn': '换手率',
-                                    'pctChg': '单日涨跌幅(%)', 'peTTM': '市盈率(PE)', 'pbMRQ': '市净率(PB)',
-                                    'raw_close': f'{new_stock_name}不复权收盘价' # 👈 注入关键的真实单价列
-                                }, inplace=True)
-                                
-                                # 日期转换与数值清洗
-                                df_k['日期'] = pd.to_datetime(df_k['日期']).dt.strftime('%Y-%m-%d')
-                                for col in df_k.columns:
-                                    if col != '日期': 
-                                        df_k[col] = pd.to_numeric(df_k[col], errors='coerce')
-                                        
-                                # 写入本地 CSV 仓库
-                                file_path = os.path.join(DATA_DIR, f"{new_stock_name}.csv")
-                                df_k.to_csv(file_path, index=False, encoding='utf-8-sig')
-                                
-                                # 👇 ================= 新增：将新标的永久写入后台爬虫配置 ================= 👇
-                                config_path = "stock_config.json"
-                                stock_dict = {}
-                                if os.path.exists(config_path):
-                                    with open(config_path, "r", encoding="utf-8") as f:
-                                        stock_dict = json.load(f)
-                                
-                                # 将刚匹配到的 bs_code 和名字存入字典
-                                stock_dict[bs_code] = new_stock_name
-                                
-                                with open(config_path, "w", encoding="utf-8") as f:
-                                    json.dump(stock_dict, f, ensure_ascii=False, indent=4)
-                                # 👆 ========================================================================= 👆
-                                
-                                # 👇 ====== 同步增加：动态抓取分红数据 ====== 👇
-                                DIVIDEND_DIR = "dividend_data"
-                                os.makedirs(DIVIDEND_DIR, exist_ok=True)
-                                
-                                try:
-                                    pure_code = bs_code.split('.')[1]
-                                    df_div = ak.stock_fhps_detail_em(symbol=pure_code)
-                                    
-                                    if not df_div.empty:
-                                        date_col = next((c for c in df_div.columns if '除息' in c or '除权' in c), None)
-                                        cash_col = next((c for c in df_div.columns if '派息' in c), None)
-                                        send_col = next((c for c in df_div.columns if '送股' in c), None)
-                                        trans_col = next((c for c in df_div.columns if '转增' in c), None)
-                                        
-                                        if date_col:
-                                            df_div = df_div.dropna(subset=[date_col])
-                                            std_div = pd.DataFrame()
-                                            std_div['日期'] = pd.to_datetime(df_div[date_col]).dt.strftime('%Y-%m-%d')
-                                            std_div['每10股派息'] = pd.to_numeric(df_div[cash_col], errors='coerce').fillna(0.0) if cash_col else 0.0
-                                            std_div['每10股送股'] = pd.to_numeric(df_div[send_col], errors='coerce').fillna(0.0) if send_col else 0.0
-                                            std_div['每10股转增'] = pd.to_numeric(df_div[trans_col], errors='coerce').fillna(0.0) if trans_col else 0.0
-                                            
-                                            std_div = std_div[std_div['日期'] >= '2023-01-01']
-                                            if not std_div.empty:
-                                                div_path = os.path.join(DIVIDEND_DIR, f"{new_stock_name}_分红.csv")
-                                                std_div.to_csv(div_path, index=False, encoding='utf-8-sig')
-                                except Exception as e:
-                                    pass # 前台报错静默处理，以免影响客户体验
-                                # 👆 ========================================= 👆
-
-                                st.success(f"🎉 成功！【{new_stock_name}】数据已入库，并已加入后台自动更新序列！")
-                                time.sleep(1.5)  # 稍微停顿让用户看清成功提示
-                                
-                                # 💡 强行清理缓存并重启页面，让新股票立刻出现在下拉菜单里！
-                                st.cache_data.clear()
-                                st.rerun()
-                                
+                            st.error(f"❌ {msg}")
                     except Exception as e:
                         st.error(f"❌ 系统异常: {e}")
+        if not eastmoney_kline_available():
+            st.caption("ℹ️ 本机东财 K 线(push2his)不可达，已自动使用新浪日线；东财分红等其它接口仍可用。")
     # 👆 ========================================================== 👆
 
 else:
@@ -560,14 +737,14 @@ for i, row in admin_df.iterrows():
                 current_cash += txn['total']
                 diff = (txn['qty'] * txn['price']) - txn['total']
                 if diff > 0: daily_friction_cost += diff
-        # 👇 新增：管理费与结账重置逻辑
+        # 管理费（内扣/外付）仅影响现金或水位线标记，不计入成本线（成本线=净本金）
         elif txn['type'] == '提取管理费(内扣)':
             if current_cash >= txn['total']:
                 current_cash -= txn['total']
-                current_principal -= txn['total'] # 视为资金流出
-            else: is_valid = False
+            else:
+                is_valid = False
         elif txn['type'] == '结账重置(外付)':
-            pass # 外付不影响账户内资金，仅作为生成新一期水位线的物理标记
+            pass
 
         if not is_valid:
             st.session_state.trade_log = st.session_state.trade_log.drop(txn['idx'])
@@ -583,13 +760,12 @@ for i, row in admin_df.iterrows():
     
     total_asset_series[i] = current_cash + total_market_val
     cash_series[i] = current_cash; daily_fee_series[i] = daily_friction_cost; cumulative_fees += daily_friction_cost
-    cum_fee_series[i] = cumulative_fees; principal_series[i] = current_principal 
+    cum_fee_series[i] = cumulative_fees; principal_series[i] = current_principal
     for name in stock_names: holdings_series[name][i] = current_holdings[name]
 
 admin_df['总持仓市值'] = total_asset_series; admin_df['账户可用现金'] = cash_series
 admin_df['当日产生税费'] = daily_fee_series; admin_df['累计税费'] = cum_fee_series
-admin_df['累计税费'] = cum_fee_series
-admin_df['累计净本金'] = principal_series 
+admin_df['累计净本金'] = principal_series
 for name in stock_names: admin_df[f'{name}_持仓'] = holdings_series[name]
 
 admin_df['每日净流入'] = admin_df['累计净本金'].diff().fillna(admin_df['累计净本金'])
@@ -611,6 +787,7 @@ admin_latest = admin_df.iloc[-1]
 snap_date_str = admin_latest['日期'].strftime('%Y-%m-%d')
 snap_cash = admin_latest['账户可用现金']
 snap_fees = admin_latest['累计税费']
+
 
 # ==========================================
 # 4. 后台 UI：交易台、底层雷达、持仓胶囊、对账单
@@ -755,11 +932,20 @@ if not is_client_mode:
     # ==========================================
     # 💡 新增：管理员专属带标注走势图
     # ==========================================
-    st.markdown("### 📊 账户历史操作全景图")
+    st.markdown("""
+<div style="display:flex;align-items:center;gap:10px;margin:1.2rem 0 0.8rem;">
+    <div style="width:4px;height:24px;background:linear-gradient(180deg,#3b82f6,#8b5cf6);border-radius:2px;flex-shrink:0;"></div>
+    <span style="font-size:1.1rem;font-weight:800;color:#0f172a;">📊 账户历史操作全景图</span>
+</div>""", unsafe_allow_html=True)
     admin_fig = go.Figure()
     
     # 1. 画出资产总净值底线
     admin_fig.add_trace(go.Scatter(x=admin_df['日期'], y=admin_df['总持仓市值'], mode='lines', name='总资产', line=dict(color='#3b82f6', width=2)))
+    admin_fig.add_trace(go.Scatter(
+        x=admin_df['日期'], y=admin_df['累计净本金'], mode='lines', name='账户成本(净本金)',
+        line=dict(color='#f59e0b', width=2, dash='dash'),
+        hovertemplate="<b>净本金</b>: ¥%{y:,.2f}<extra></extra>",
+    ))
     
     # 2. 把流水日记里的操作挂载到图表上
     log_df = st.session_state.trade_log.copy()
@@ -802,15 +988,40 @@ if not is_client_mode:
                     hovertemplate=f"<b>{m_style['name']}</b><br>日期: %{{x}}<br>金额/数量: " + t_data[c_tot_chart].astype(str) + "<extra></extra>"
                 ))
 
-    admin_fig.update_layout(hovermode="x unified", margin=dict(l=0, r=0, t=30, b=0), legend=dict(orientation="h", y=1.02, x=0))
+    admin_fig.update_layout(
+        hovermode="x unified",
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        margin=dict(l=0, r=0, t=40, b=0),
+        legend=dict(orientation="h", y=1.04, x=0, font=dict(size=12)),
+        xaxis=dict(gridcolor='rgba(226,232,240,0.7)', linecolor='#e2e8f0',
+                   tickfont=dict(color='#64748b', size=11), showgrid=True),
+        yaxis=dict(gridcolor='rgba(226,232,240,0.7)', linecolor='#e2e8f0',
+                   tickfont=dict(color='#64748b', size=11), tickprefix='¥',
+                   tickformat=',.0f', showgrid=True),
+        font=dict(family='-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif',
+                  color='#334155'),
+        hoverlabel=dict(bgcolor='rgba(15,23,42,0.92)', font_color='white',
+                        bordercolor='rgba(255,255,255,0.15)', font_size=13, font_family='sans-serif'),
+    )
+    admin_fig.data[0].update(
+        fill='tozeroy',
+        fillcolor='rgba(59,130,246,0.08)',
+        line=dict(color='#3b82f6', width=2.5),
+    )
     st.plotly_chart(admin_fig, width="stretch")
+    st.caption("橙色虚线 = **净本金**（仅转入本金 − 提取现金）。内扣/外付管理费不改变成本线，内扣只减少账户现金。")
 
 
     # ==========================================
     # 💡 新增模块：智能管理费与高水位线结算引擎
     # ==========================================
     st.markdown("---")
-    st.markdown("### 💰 管理费与结算周期管理")
+    st.markdown("""
+<div style="display:flex;align-items:center;gap:10px;margin:1.2rem 0 0.8rem;">
+    <div style="width:4px;height:24px;background:linear-gradient(180deg,#f59e0b,#ef4444);border-radius:2px;flex-shrink:0;"></div>
+    <span style="font-size:1.1rem;font-weight:800;color:#0f172a;">💰 管理费与结算周期管理</span>
+</div>""", unsafe_allow_html=True)
     
     log_df = st.session_state.trade_log
     
@@ -1002,35 +1213,123 @@ if not is_client_mode:
         st.metric("📉 累计交易损耗 (含税费)", f"¥{snap_fees:,.2f}", f"-{snap_fees:,.2f}", delta_color="inverse")
 
     st.markdown("---")
-    st.markdown(f"##### 📋 内部历史指令账本 (管理员维护区)")
+    st.markdown("##### 📋 内部历史指令账本 (管理员维护区)")
+    TXN_TYPE_OPTIONS = [
+        '转入本金', '提取现金', '买入股票', '卖出股票',
+        '提取管理费(内扣)', '结账重置(外付)',
+    ]
+
+    def _normalize_trade_log_df(df: pd.DataFrame) -> pd.DataFrame:
+        cols = ['日期', '操作类型', '标的', '数量(股)', '成交单价(¥)', '实际结算总金额(¥)']
+        if df is None or df.empty:
+            return pd.DataFrame(columns=cols)
+        out = df.copy()
+        for c in cols:
+            if c not in out.columns:
+                out[c] = None
+        out = out[cols]
+        out['日期'] = pd.to_datetime(out['日期'], errors='coerce').dt.date
+        out['操作类型'] = out['操作类型'].astype(str)
+        for c in ['数量(股)', '成交单价(¥)', '实际结算总金额(¥)']:
+            out[c] = pd.to_numeric(out[c], errors='coerce')
+        out['标的'] = out['标的'].apply(lambda x: None if pd.isna(x) or str(x).strip() in ('', 'None', 'nan') else str(x))
+        return out.reset_index(drop=True)
+
+    def _trade_log_signature(df: pd.DataFrame) -> str:
+        n = _normalize_trade_log_df(df)
+        return n.to_json(date_format='iso', force_ascii=False)
+
     with st.expander("展开查看历史指令与对账单", expanded=False):
+        st.caption("支持表格内直接改数、底部 ➕ 增行；也可用下方按钮新增/删除。修改后请点「保存账本」。")
 
-        # 💡 终极 PyArrow 渲染防爆锁：确保交给组件前，所有的日期列绝对纯净！
-        if not st.session_state.trade_log.empty:
-            for col in st.session_state.trade_log.columns:
-                if '日期' in str(col) or 'date' in str(col).lower():
-                    # 强行统一为 Python 原生的 date 对象
-                    st.session_state.trade_log[col] = pd.to_datetime(st.session_state.trade_log[col]).dt.date
+        tool_add, tool_del, tool_save, tool_count = st.columns([1, 1.2, 1, 0.8])
+        del_key = f"ledger_del_{current_user}_{active_acc}"
 
-        new_edited_trades = st.data_editor(
-            st.session_state.trade_log,
-            num_rows="dynamic", hide_index=True,    
-            column_config={
-                "日期": st.column_config.DateColumn("操作日期", required=True),
-                "操作类型": st.column_config.SelectboxColumn("操作类型", options=['转入本金', '提取现金', '买入股票', '卖出股票'], required=True),
-                "标的": st.column_config.SelectboxColumn("交易标的", options=stock_names, required=False), 
-                "数量(股)": st.column_config.NumberColumn("数量(股)", min_value=1, step=100),
-                "成交单价(¥)": st.column_config.NumberColumn("单价(¥)", min_value=0.01, format="%.2f"),
-                "实际结算总金额(¥)": st.column_config.NumberColumn("结算总金额(¥)", min_value=0.01, required=True, format="%.2f")
-            },
-            width="stretch", height=300, key=f"editor_{current_user}_{active_acc}" 
-        )
-        if not new_edited_trades.equals(st.session_state.trade_log):
-            st.session_state.trade_log = new_edited_trades
-            db.save_trades(current_user, active_acc, new_edited_trades)
+        if tool_add.button("➕ 新增一条指令", width="stretch"):
+            blank = pd.DataFrame([{
+                '日期': min(global_max_date, max(account_start_date, global_min_date)),
+                '操作类型': '转入本金',
+                '标的': None,
+                '数量(股)': None,
+                '成交单价(¥)': None,
+                '实际结算总金额(¥)': 10000.0,
+            }])
+            st.session_state.trade_log = pd.concat(
+                [_normalize_trade_log_df(st.session_state.trade_log), blank],
+                ignore_index=True,
+            )
             st.rerun()
 
-           
+        log_for_pick = _normalize_trade_log_df(st.session_state.trade_log)
+        del_options = {}
+        if not log_for_pick.empty:
+            for i, row in log_for_pick.iterrows():
+                label = (
+                    f"#{i} | {row['日期']} | {row['操作类型']}"
+                    f"{(' | ' + str(row['标的'])) if row['标的'] else ''}"
+                    f" | ¥{row['实际结算总金额(¥)']:,.2f}"
+                )
+                del_options[label] = i
+
+        picked_labels = tool_del.multiselect(
+            "选择要删除的指令",
+            options=list(del_options.keys()),
+            placeholder="可多选",
+            key=del_key,
+            label_visibility="collapsed",
+        )
+        if tool_del.button("🗑️ 删除选中", width="stretch", disabled=not picked_labels):
+            drop_idx = [del_options[l] for l in picked_labels]
+            st.session_state.trade_log = log_for_pick.drop(index=drop_idx).reset_index(drop=True)
+            db.save_trades(current_user, active_acc, st.session_state.trade_log)
+            st.session_state.pop(del_key, None)
+            st.toast(f"已删除 {len(drop_idx)} 条指令")
+            st.rerun()
+
+        tool_count.caption(f"共 **{len(log_for_pick)}** 条")
+
+        editor_df = _normalize_trade_log_df(st.session_state.trade_log)
+        new_edited_trades = st.data_editor(
+            editor_df,
+            num_rows="dynamic",
+            hide_index=True,
+            column_config={
+                "日期": st.column_config.DateColumn("操作日期", required=True),
+                "操作类型": st.column_config.SelectboxColumn(
+                    "操作类型", options=TXN_TYPE_OPTIONS, required=True
+                ),
+                "标的": st.column_config.SelectboxColumn("交易标的", options=stock_names, required=False),
+                "数量(股)": st.column_config.NumberColumn("数量(股)", min_value=0, step=100),
+                "成交单价(¥)": st.column_config.NumberColumn("单价(¥)", min_value=0.0, format="%.2f"),
+                "实际结算总金额(¥)": st.column_config.NumberColumn(
+                    "结算总金额(¥)", min_value=0.01, required=True, format="%.2f"
+                ),
+            },
+            width="stretch",
+            height=320,
+            key=f"editor_{current_user}_{active_acc}",
+        )
+
+        edited_norm = _normalize_trade_log_df(new_edited_trades)
+        has_changes = _trade_log_signature(edited_norm) != _trade_log_signature(st.session_state.trade_log)
+        if tool_save.button("💾 保存账本", width="stretch", type="primary", disabled=not has_changes):
+            if edited_norm.empty:
+                st.session_state.trade_log = edited_norm
+                db.save_trades(current_user, active_acc, edited_norm)
+                st.toast("账本已清空并保存")
+                st.rerun()
+            bad = edited_norm[
+                edited_norm['实际结算总金额(¥)'].isna() | (edited_norm['实际结算总金额(¥)'] <= 0)
+            ]
+            if not bad.empty:
+                st.error("保存失败：存在结算总金额为空或 ≤0 的记录，请修正后再保存。")
+            else:
+                st.session_state.trade_log = edited_norm
+                db.save_trades(current_user, active_acc, edited_norm)
+                st.toast(f"已保存 {len(edited_norm)} 条指令")
+                st.rerun()
+        elif has_changes:
+            st.warning("账本有未保存修改，请点击「💾 保存账本」。")
 
         st.markdown("##### 📋 全量对账单 (倒序展示)")
         
@@ -1059,7 +1358,11 @@ if not is_client_mode:
 
     # 👇 新增：后台投顾分析撰写面板
     # 👇 升级版：后台投顾分析撰写与管理面板
-    st.markdown("### 📝 投顾研报寄语管理")
+    st.markdown("""
+<div style="display:flex;align-items:center;gap:10px;margin:1.5rem 0 0.8rem;">
+    <div style="width:4px;height:24px;background:linear-gradient(180deg,#10b981,#06b6d4);border-radius:2px;flex-shrink:0;"></div>
+    <span style="font-size:1.1rem;font-weight:800;color:#0f172a;">📝 投顾研报寄语管理</span>
+</div>""", unsafe_allow_html=True)
     
     # 自动生成当前对应的三个报告期名称，用于绑定
     _today = datetime.now().date()
@@ -1260,19 +1563,57 @@ st.markdown("<div id='client-scroll-trigger' style='height: 1px; width: 100%; ma
 c_empty, c_title, c_print = st.columns([1, 4, 1])
 
 with c_title:
-    # 👇 关键1：在这里埋下客户专属的隐形锚点
-    st.markdown("<div id='client-sticky-anchor'></div><h2 style='text-align: center; color: #1E293B; margin: 0;'>🌐 客户汇报与展示大屏</h2>", unsafe_allow_html=True)
+    st.markdown("""
+    <div id='client-sticky-anchor'></div>
+    <div style="
+        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
+        border-radius: 16px;
+        padding: 1.35rem 2rem 1.45rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.85) inset;
+        border: 1px solid #e2e8f0;
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 0.4rem;
+    ">
+        <div style="
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+            border-radius: 16px 16px 0 0;
+        "></div>
+        <div style="
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse 80% 120% at 20% 0%, rgba(59,130,246,0.06) 0%, transparent 55%),
+                         radial-gradient(ellipse 70% 100% at 85% 100%, rgba(139,92,246,0.05) 0%, transparent 50%);
+            pointer-events: none;
+        "></div>
+        <div style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: #64748b; text-transform: uppercase; margin-bottom: 0.4rem; position: relative;">Investment Performance Report</div>
+        <div style="font-size: 1.48rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; position: relative;">🌐 客户汇报与展示大屏</div>
+        <div style="width: 44px; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 2px; margin: 0.65rem auto 0; position: relative;"></div>
+    </div>
+    """, unsafe_allow_html=True)
 
 with c_print:
     components.html(
         """
-        <div style="display: flex; justify-content: flex-end; align-items: center; padding-top: 3px;">
-            <button onclick="window.parent.print()" style="padding: 8px 16px; background-color: #3b82f6; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-family: sans-serif; font-size: 14px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                🖨️ 导出 PDF
-            </button>
+        <div style="display: flex; justify-content: flex-end; align-items: center; height: 100%; padding-top: 10px;">
+            <button onclick="window.parent.print()" style="
+                padding: 9px 18px;
+                background: #ffffff;
+                color: #334155;
+                border: 1px solid #e2e8f0;
+                border-radius: 10px;
+                font-weight: 600;
+                cursor: pointer;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                font-size: 13px;
+                box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+                letter-spacing: 0.02em;
+            ">🖨️ 导出 PDF</button>
         </div>
-        """, 
-        height=45
+        """,
+        height=55
     )
 
 # 👇 ================= 新增：客户大屏 JS 碰撞推挤魔法 ================= 👇
@@ -1308,7 +1649,7 @@ components.html(
                         padding-top: 15px !important;
                         padding-bottom: 10px !important;
                         margin-top: -15px !important;
-                        border-bottom: 1px solid rgba(128,128,128,0.2) !important;
+                        border-bottom: 1px solid #e2e8f0 !important;
                     }
                 `;
                 doc.head.appendChild(style);
@@ -1356,7 +1697,23 @@ components.html(
 
 st.markdown("<hr style='margin-top: 5px; margin-bottom: 20px;'>", unsafe_allow_html=True)
 
-st.subheader("📊 核心指标与业绩分析曲线")
+st.markdown("""
+<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.2rem;">
+    <div style="
+        width: 4px; height: 28px;
+        background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+        border-radius: 2px; flex-shrink: 0;
+    "></div>
+    <div>
+        <div style="font-size: 1.22rem; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; line-height: 1.2;">
+            📊 核心指标与业绩分析曲线
+        </div>
+        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 500; margin-top: 2px; letter-spacing: 0.02em;">
+            PERFORMANCE METRICS &amp; ANALYTICS
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # 1. 自动推算各个自然周期的起止时间点
 today = datetime.now().date()
@@ -1483,15 +1840,17 @@ c_info1.markdown(f"*(实际有效数据区间：**{actual_start_str}** 至 **{ac
 c_info2.markdown(f"<div style='text-align: right;'><span style='color:gray;font-size:14px;'>⚖️ 该区间净充值/流入本金: <b>¥{period_net_inflow:,.2f}</b></span></div>", unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
-# 第一行：三个收益率指标（比例一致）
+st.markdown('<div id="iams-kpi-start"></div>', unsafe_allow_html=True)
+# 第一行：三个收益率指标
 col1, col2, col3 = st.columns(3)
-col1.metric("📊 区间回报", f"{portfolio_change:+.2f}%",
-            help="区间回报 = (期末资产 - 期初资产 - 期间净转入) / 成本基数，反映该区间内账户的真实盈亏比例。")
+col1.metric(
+    "📊 区间回报", f"{portfolio_change:+.2f}%",
+    help="区间回报 = (期末资产 - 期初资产 - 期间净转入) / 成本基数，反映该区间内账户的真实盈亏比例。",
+)
 col2.metric("📈 " + BENCHMARK_NAME + " 同期表现", f"{c_latest[f'{BENCHMARK_NAME}收盘价']:,.2f}", f"{index_change:+.2f}% (基准涨跌)", delta_color="inverse", 
             help="同一时间区间内，" + BENCHMARK_NAME + "指数的累计涨跌幅，作为大盘基准参考。")
 col3.metric("🔥 区间超额收益", f"{alpha:+.2f}%", f"{alpha:+.2f}% (相较大盘)", delta_color="inverse", 
             help="账户区间回报率减去大盘基准涨跌幅，正数说明跑赢大盘，负数说明跑输大盘。")
-st.markdown("<br>", unsafe_allow_html=True)
 
 client_df['历史最高净值'] = client_df['精确组合净值'].cummax()
 client_df['回撤幅度'] = (client_df['精确组合净值'] - client_df['历史最高净值']) / client_df['历史最高净值']
@@ -1502,21 +1861,24 @@ annual_return = portfolio_change * (365.0 / delta_days)
 
 daily_returns = client_df['账户当日收益率'] / 100.0  
 daily_volatility = daily_returns.std()
-annual_volatility = daily_volatility * np.sqrt(252) * 100 if pd.notnull(daily_volatility) else 0.0
 
 daily_rf = 0.02 / 252
 excess_returns = daily_returns - daily_rf
 sharpe_ratio = (excess_returns.mean() / daily_volatility) * np.sqrt(252) if daily_volatility > 0 else 0.0
 
-# 第二行：总资产 + 风险指标
+# 第二行：总资产 + 风险指标（与上行列宽对齐）
 col_r1, col_r2, col_r3 = st.columns(3)
-col_r1.metric("💰 期末真实总资产", f"¥{c_latest['总持仓市值']:,.2f}",
-              help="该区间最后一日的账户总资产估值（现金 + 持仓市值）。")
+col_r1.metric(
+    "💰 期末真实总资产", f"¥{c_latest['总持仓市值']:,.2f}",
+    help="该区间最后一日的账户总资产估值（现金 + 持仓市值）。",
+)
 col_r2.metric("📉 区间最大回撤", f"{max_drawdown:.2f}%", f"{max_drawdown:.2f}% (极值跌幅)", delta_color="inverse", 
               help="该区间内，账户净值从最高点回落到最低点的最大跌幅，用于衡量面临的极端风险。")
-if sharpe_ratio > 1:
-    col_r3.metric("⚖️ 夏普比率 (Sharpe)", f"{sharpe_ratio:.2f}", 
-                  help="衡量承担每单位风险所获得的超额回报。数值越高，代表经风险调整后的性价比越好（通常 >1 算优秀）。")
+col_r3.metric(
+    "⚖️ 夏普比率 (Sharpe)", f"{sharpe_ratio:.2f}",
+    help="衡量承担每单位风险所获得的超额回报。数值越高，代表经风险调整后的性价比越好（通常 >1 算优秀）。",
+)
+st.markdown('<div id="iams-kpi-end"></div>', unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
 
 # 6. 客户图表渲染
@@ -1533,20 +1895,98 @@ client_df['大盘当日_str'] = client_df['大盘当日收益率'].apply(lambda 
 client_df['大盘累计_str'] = client_df['大盘累计收益率'].apply(lambda x: f"{x:+.2f}%")
 custom_data_matrix = client_df[['账户当日_str', '账户累计_str', '大盘当日_str', '大盘累计_str']].values
 
-tab1, tab2 = st.tabs(["📈 累计收益率走势图 (区间动态汇报)", "📊 真实资产走势图 (仅展示总量)"])
+tab1, tab2 = st.tabs([
+    "📈 累计收益率走势图 (区间动态汇报)",
+    "📊 真实资产走势图 (含净本金成本线)",
+])
+
+_chart_layout_base = dict(
+    plot_bgcolor='rgba(0,0,0,0)',
+    paper_bgcolor='rgba(0,0,0,0)',
+    hovermode='x unified',
+    margin=dict(l=0, r=0, t=40, b=0),
+    legend=dict(orientation="h", yanchor="bottom", y=1.04, xanchor="left", x=0,
+                font=dict(size=12)),
+    xaxis=dict(gridcolor='rgba(226,232,240,0.7)', linecolor='#e2e8f0', zeroline=False,
+               tickfont=dict(color='#64748b', size=11)),
+    font=dict(family='-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", sans-serif',
+              color='#334155'),
+    hoverlabel=dict(bgcolor='rgba(15,23,42,0.92)', font_color='white',
+                    bordercolor='rgba(255,255,255,0.15)', font_size=13),
+)
 
 with tab1:
     fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=client_df['日期'], y=client_df['账户累计收益率'], customdata=custom_data_matrix, mode='lines', name='本投资组合', line=dict(color='#ef4444', width=3), hovertemplate="<b>组合回报</b><br>单日波动: %{customdata[0]}<br>累计回报: %{customdata[1]}<extra></extra>"))
-    fig2.add_trace(go.Scatter(x=client_df['日期'], y=client_df['大盘累计收益率'], customdata=custom_data_matrix, mode='lines', name='上证指数(大盘基准)', line=dict(color='#3b82f6', width=2), hovertemplate="<b>大盘基准</b><br>单日波动: %{customdata[2]}<br>累计涨幅: %{customdata[3]}<extra></extra>"))
-    fig2.update_layout(hovermode="x unified", yaxis_title="累计收益率 (%)", yaxis=dict(ticksuffix="%"), margin=dict(l=0, r=0, t=30, b=0), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0))
+    fig2.add_trace(go.Scatter(
+        x=client_df['日期'], y=client_df['大盘累计收益率'], customdata=custom_data_matrix,
+        mode='lines', name='上证指数 (大盘基准)',
+        line=dict(color='#3b82f6', width=2, dash='dot'),
+        fill='tozeroy', fillcolor='rgba(59,130,246,0.05)',
+        hovertemplate="<b>大盘基准</b><br>单日波动: %{customdata[2]}<br>累计涨幅: %{customdata[3]}<extra></extra>"
+    ))
+    fig2.add_trace(go.Scatter(
+        x=client_df['日期'], y=client_df['账户累计收益率'], customdata=custom_data_matrix,
+        mode='lines', name='本投资组合',
+        line=dict(color='#ef4444', width=2.5),
+        fill='tozeroy', fillcolor='rgba(239,68,68,0.08)',
+        hovertemplate="<b>组合回报</b><br>单日波动: %{customdata[0]}<br>累计回报: %{customdata[1]}<extra></extra>"
+    ))
+    # 成本线：收益率图上固定为 0%（盈亏平衡），不把净本金金额叠到 % 坐标系
+    fig2.add_trace(go.Scatter(
+        x=client_df['日期'],
+        y=np.zeros(len(client_df)),
+        mode='lines',
+        name='净本金成本线(盈亏平衡 0%)',
+        line=dict(color='#f59e0b', width=1.5, dash='dash'),
+        hoverinfo='skip',
+    ))
+    ret_series = pd.concat([client_df['账户累计收益率'], client_df['大盘累计收益率']])
+    ret_pad = max((ret_series.max() - ret_series.min()) * 0.12, 1.5)
+    ret_lo = min(ret_series.min() - ret_pad, 0)
+    ret_hi = ret_series.max() + ret_pad
+    fig2.update_layout(
+        **_chart_layout_base,
+        yaxis=dict(
+            gridcolor='rgba(226,232,240,0.7)', linecolor='#e2e8f0', zeroline=True,
+            zerolinecolor='rgba(100,116,139,0.4)', zerolinewidth=1.5,
+            ticksuffix='%', tickfont=dict(color='#64748b', size=11),
+            title=dict(text='累计收益率 (%)', font=dict(color='#64748b', size=12)),
+            range=[ret_lo, ret_hi],
+        ),
+    )
     st.plotly_chart(fig2, width="stretch")
+    st.caption(
+        "橙色虚线为 **0% 盈亏平衡线**（相对净本金的起算点）。"
+        "净本金金额及转入/提取变动请见「真实资产走势图」或账本，勿与收益率共用纵轴。"
+    )
 
 with tab2:
     fig1 = go.Figure()
-    fig1.add_trace(go.Scatter(x=client_df['日期'], y=client_df['总持仓市值'], mode='lines', name='客户总资产', line=dict(color='#ef4444', width=3), hovertemplate="总资产: ¥%{y:,.2f}<extra></extra>"))
-    fig1.update_layout(hovermode="x unified", margin=dict(l=0, r=0, t=30, b=0), legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0))
+    fig1.add_trace(go.Scatter(
+        x=client_df['日期'], y=client_df['总持仓市值'],
+        mode='lines', name='客户总资产',
+        line=dict(color='#ef4444', width=2.5),
+        fill='tozeroy', fillcolor='rgba(239,68,68,0.08)',
+        hovertemplate="<b>总资产</b>: ¥%{y:,.2f}<extra></extra>"
+    ))
+    fig1.add_trace(go.Scatter(
+        x=client_df['日期'], y=client_df['累计净本金'],
+        mode='lines', name='账户成本(净本金)',
+        line=dict(color='#f59e0b', width=2, dash='dash'),
+        hovertemplate="<b>净本金</b>: ¥%{y:,.2f}<extra></extra>",
+    ))
+    asset_y = pd.concat([client_df['总持仓市值'], client_df['累计净本金']])
+    y_pad = max((asset_y.max() - asset_y.min()) * 0.08, 500.0)
+    fig1.update_layout(
+        **_chart_layout_base,
+        yaxis=dict(
+            gridcolor='rgba(226,232,240,0.7)', linecolor='#e2e8f0', zeroline=False,
+            tickprefix='¥', tickformat=',.0f', tickfont=dict(color='#64748b', size=11),
+            range=[float(asset_y.min()) - y_pad, float(asset_y.max()) + y_pad],
+        ),
+    )
     st.plotly_chart(fig1, width="stretch")
+    st.caption("橙色虚线 = **净本金**（转入 − 提取现金）。内扣/外付管理费不改变净本金，仅减少总资产中的现金。")
 
 # ==========================================
 # 8. 前台展示模块（根据客户当前选择的维度，精准匹配对应月份的寄语）
