@@ -126,10 +126,43 @@ def get_trades(username, account_name):
             df['日期'] = pd.to_datetime(df['日期'])
         return df
 
+def get_all_trades_for_user(username):
+    """Single query: all account trade logs for hall batch P/L."""
+    user_id = get_user_id(username)
+    cols = ['日期', '操作类型', '标的', '数量(股)', '成交单价(¥)', '实际结算总金额(¥)']
+    empty = pd.DataFrame(columns=cols)
+    if not user_id:
+        return {}
+    with get_conn() as conn:
+        df = pd.read_sql_query(
+            """
+            SELECT a.account_name, t.日期, t.操作类型, t.标的,
+                   t."数量(股)", t."成交单价(¥)", t."实际结算总金额(¥)"
+            FROM trades t
+            JOIN accounts a ON t.account_id = a.id
+            WHERE a.user_id = ?
+            ORDER BY a.account_name, t.日期
+            """,
+            conn,
+            params=(user_id,),
+        )
+    if df.empty:
+        return {}
+    df['日期'] = pd.to_datetime(df['日期'], format='mixed', errors='coerce')
+    result = {}
+    for name, group in df.groupby('account_name', sort=False):
+        result[name] = group[cols].reset_index(drop=True)
+    return result
+
 def save_trades(username, account_name, df):
     """覆盖保存指定账户的流水表（适配 Streamlit 的 data_editor）"""
     acc_id = get_account_id(username, account_name)
     if not acc_id: return
+    try:
+        import portfolio_engine as pe
+        pe.invalidate_user_snapshots(username)
+    except Exception:
+        pass
     
     # 准备写入数据库的数据，追加 account_id
     df_to_save = df.copy()
@@ -165,6 +198,11 @@ def delete_account(username, account_name):
         # 2. 删除主表中的账户
         cursor.execute("DELETE FROM accounts WHERE id=?", (acc_id,))
         conn.commit()
+    try:
+        import portfolio_engine as pe
+        pe.invalidate_user_snapshots(username)
+    except Exception:
+        pass
     return True
 
 # ==========================================

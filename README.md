@@ -1,6 +1,6 @@
 # 🌌 Nova Quant | 智能投顾与全周期资产管理中枢
 
-![Version](https://img.shields.io/badge/Version-1.3.0-blue)
+![Version](https://img.shields.io/badge/Version-1.4.0-blue)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
 ![Streamlit](https://img.shields.io/badge/Streamlit-Framework-FF4B4B?logo=streamlit)
 ![Pandas](https://img.shields.io/badge/Pandas-Data_Processing-150458?logo=pandas)

@@ -19,6 +19,10 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import calendar
 import db_manager as db
+import portfolio_engine as pe
+import iams_prefs as prefs
+import iams_i18n as i18n
+import iams_ui as ui
 import baostock as bs
 import akshare as ak
 import time
@@ -32,7 +36,17 @@ from streamlit_javascript import st_javascript
 # ==========================================
 # 0. 页面保护、鉴权与“客户专属链接”路由
 # ==========================================
-st.set_page_config(page_title="数据看板", page_icon="📊", layout="wide", initial_sidebar_state="auto")
+prefs.bootstrap_from_query(st.query_params)
+_boot_lang = st.query_params.get("lang", "zh")
+if _boot_lang not in ("zh", "en"):
+    _boot_lang = "zh"
+
+st.set_page_config(
+    page_title=i18n.STRINGS["analytics.title"][_boot_lang],
+    page_icon="📊",
+    layout="wide",
+    initial_sidebar_state="auto",
+)
 
 # ==========================================
 # 📱 移动端 (手机/Pad) 专属 UI 适配引擎
@@ -63,12 +77,8 @@ st.markdown("""
                 font-size: 0.8rem !important;
             }
             
-            /* 4. 优化我们之前写的 JS 吸顶魔法：在手机上紧贴顶部，不浪费一寸垂直空间 */
-            .client-sticky-header, .my-sticky-header {
-                top: 0rem !important; 
-                padding-top: 5px !important;
-                padding-bottom: 5px !important;
-            }
+            /* 4. 手机端顶栏 */
+            .iams-admin-topbar.is-fixed-top { top: 0 !important; }
             
             /* 5. 隐藏图表右上角繁杂的工具栏（手机上根本点不到，还会挡住折线） */
             .modebar {
@@ -79,21 +89,226 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 🎨 全局 Premium 金融看板主题 CSS
+# 🎨 全局主题：白底 · 红金金融风
 # ==========================================
 st.markdown("""
 <style>
-/* ---- 全局字体与渲染优化 ---- */
+/* ---- 主色：白 / 红 / 金 ---- */
 * { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-.block-container { max-width: 1400px; padding-top: 2rem !important; }
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stAppViewBlockContainer"] {
+    background: linear-gradient(180deg, #ffffff 0%, #fffaf8 45%, #fffbf5 100%) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif !important;
+}
+[data-testid="stHeader"],
+[data-testid="stDecoration"],
+header {
+    display: none !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+.block-container {
+    max-width: 1400px;
+    padding-top: 0.5rem !important;
+    background: transparent !important;
+}
+section[data-testid="stMain"] { background: transparent !important; }
+section[data-testid="stMain"] h1,
+section[data-testid="stMain"] h2,
+section[data-testid="stMain"] h3,
+section[data-testid="stMain"] h4,
+section[data-testid="stMain"] .stSubheader > div > div {
+    color: #1c1917 !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.02em;
+}
+section[data-testid="stMain"] .stMarkdown,
+section[data-testid="stMain"] .stMarkdown p,
+section[data-testid="stMain"] .stMarkdown span,
+section[data-testid="stMain"] .stMarkdown li,
+section[data-testid="stMain"] label,
+section[data-testid="stMain"] [data-testid="stWidgetLabel"] p,
+section[data-testid="stMain"] [data-testid="stCaptionContainer"] p,
+section[data-testid="stMain"] [data-testid="stMarkdownContainer"] p {
+    color: #57534e !important;
+}
+section[data-testid="stMain"] .stMarkdown strong,
+section[data-testid="stMain"] .stMarkdown b {
+    color: #1c1917 !important;
+}
 
-/* ---- 🃏 指标卡片 Premium 升级 ---- */
+/* ---- 管理员顶栏：单块 HTML + fixed（与客户大屏同方案） ---- */
+.iams-admin-topbar {
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+.iams-admin-topbar.is-fixed-top {
+    position: fixed !important;
+    top: 0 !important;
+    z-index: 100002 !important;
+    margin: 0 !important;
+    border: 1px solid #fde8e8;
+    border-top: none;
+    border-radius: 0 0 14px 14px;
+    background: linear-gradient(145deg, #ffffff 0%, #fffaf8 100%) !important;
+    box-shadow: 0 4px 18px rgba(196, 30, 58, 0.12);
+    overflow: hidden;
+}
+#admin-topbar-spacer {
+    display: block;
+    width: 100%;
+    margin: 0 0 0.5rem 0;
+}
+.iams-admin-topbar::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #c9a227 0%, #e8c547 40%, #dc2626 100%);
+}
+.iams-admin-topbar__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.25rem;
+    padding: 0.9rem 1.15rem;
+}
+.iams-admin-topbar__brand { flex: 1; min-width: 0; }
+.iams-admin-topbar__sub {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #a8a29e;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+}
+.iams-admin-topbar__title {
+    font-size: 1.38rem;
+    font-weight: 800;
+    color: #991b1b;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin: 0;
+}
+.iams-admin-topbar__line {
+    width: 40px;
+    height: 3px;
+    margin-top: 0.45rem;
+    background: linear-gradient(90deg, #c9a227, #dc2626);
+    border-radius: 2px;
+}
+.iams-admin-topbar__meta {
+    display: inline-block;
+    margin-top: 0.45rem;
+    padding: 0.2rem 0.65rem;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #78716c;
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 999px;
+}
+.iams-admin-topbar__btn {
+    flex-shrink: 0;
+    display: inline-block;
+    padding: 0.55rem 0.85rem;
+    border: 1px solid #fecaca;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #991b1b !important;
+    font-weight: 600;
+    font-size: 0.88rem;
+    text-decoration: none !important;
+    font-family: inherit;
+    white-space: nowrap;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+.iams-admin-topbar__btn:hover {
+    border-color: #c9a227;
+    background: #fffaf8;
+    color: #991b1b !important;
+}
+div[data-testid="stElementContainer"]:has(#client-sticky-anchor) [data-testid="stHorizontalBlock"],
+div[data-testid="stElementContainer"]:has(#client-sticky-anchor) [data-testid="column"] {
+    background: #ffffff !important;
+}
+
+/* ---- 客户汇报标题卡 ---- */
+.iams-client-banner {
+    background: linear-gradient(145deg, #ffffff 0%, #fffaf8 100%) !important;
+    border: 1px solid #fde8e8 !important;
+    border-radius: 16px !important;
+    padding: 1.35rem 2rem 1.45rem !important;
+    text-align: center !important;
+    box-shadow: 0 4px 20px rgba(196, 30, 58, 0.08), inset 0 1px 0 rgba(255,255,255,0.9) !important;
+    position: relative !important;
+    overflow: hidden !important;
+    margin-bottom: 0.4rem !important;
+}
+.iams-client-banner .iams-banner-sub {
+    font-size: 0.68rem !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.14em !important;
+    color: #a8a29e !important;
+    text-transform: uppercase !important;
+    margin-bottom: 0.4rem !important;
+}
+.iams-client-banner .iams-banner-title {
+    font-size: 1.48rem !important;
+    font-weight: 800 !important;
+    color: #991b1b !important;
+    margin: 0 !important;
+    letter-spacing: -0.02em !important;
+}
+section[data-testid="stMain"] .iams-client-banner .iams-banner-title { color: #991b1b !important; }
+section[data-testid="stMain"] .iams-client-banner .iams-banner-sub { color: #a8a29e !important; }
+.iams-muted-note { color: #78716c !important; font-size: 14px !important; }
+.iams-muted-note b { color: #1c1917 !important; }
+
+/* ---- 卡片 / 容器 ---- */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: #ffffff !important;
+    border: 1px solid #fde8e8 !important;
+    border-radius: 16px !important;
+    box-shadow: 0 2px 12px rgba(196, 30, 58, 0.06) !important;
+}
+section[data-testid="stMain"] [data-testid="stExpander"] details {
+    background: #ffffff !important;
+    border: 1px solid #fde8e8 !important;
+    border-radius: 14px !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.04) !important;
+}
+section[data-testid="stMain"] [data-testid="stExpander"] summary { color: #1c1917 !important; }
+div[data-testid="stDataFrame"] {
+    background: #ffffff !important;
+    border: 1px solid #fde8e8 !important;
+    border-radius: 14px !important;
+    overflow: hidden !important;
+    box-shadow: 0 2px 10px rgba(196, 30, 58, 0.05) !important;
+}
+div[data-testid="stAlert"] {
+    background: #fffaf8 !important;
+    border: 1px solid #fecaca !important;
+    border-radius: 12px !important;
+}
+
+/* ---- KPI 指标卡：白卡 + 红金顶线 ---- */
 div[data-testid="stMetric"] {
-    background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-    border: 1px solid #e2e8f0;
+    background: linear-gradient(145deg, #ffffff 0%, #fffaf8 100%) !important;
+    border: 1px solid #fde8e8 !important;
     border-radius: 16px;
     padding: 1.3rem 1.5rem !important;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.8) inset;
+    box-shadow: 0 2px 10px rgba(196, 30, 58, 0.07), inset 0 1px 0 rgba(255,255,255,0.9) !important;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
     position: relative;
     overflow: hidden;
@@ -103,160 +318,205 @@ div[data-testid="stMetric"]::before {
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 3px;
-    background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
+    background: linear-gradient(90deg, #c9a227 0%, #e8c547 40%, #dc2626 100%);
     border-radius: 16px 16px 0 0;
 }
 div[data-testid="stMetric"]:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(59,130,246,0.15), 0 2px 8px rgba(0,0,0,0.06);
+    transform: translateY(-2px);
+    border-color: #fecaca !important;
+    box-shadow: 0 8px 24px rgba(196, 30, 58, 0.12) !important;
 }
 div[data-testid="stMetricLabel"] > div {
-    font-size: 0.78rem !important;
+    font-size: 0.76rem !important;
     font-weight: 700 !important;
     letter-spacing: 0.06em !important;
-    color: #64748b !important;
+    color: #78716c !important;
     text-transform: uppercase !important;
 }
 div[data-testid="stMetricValue"] > div {
     font-size: 1.9rem !important;
     font-weight: 800 !important;
-    color: #0f172a !important;
+    color: #1c1917 !important;
     line-height: 1.15 !important;
     font-variant-numeric: tabular-nums;
 }
 div[data-testid="stMetricDelta"] > div {
     font-size: 0.82rem !important;
     font-weight: 600 !important;
-    opacity: 0.9;
 }
 
-/* ---- KPI 六宫格：上下两行卡片等高、等宽 ---- */
-#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] {
+/* ---- KPI 六宫格：仅锚点后紧邻两行，保留 Streamlit 列宽 ---- */
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] div[data-testid="stHorizontalBlock"],
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] + div[data-testid="stElementContainer"] div[data-testid="stHorizontalBlock"] {
     align-items: stretch !important;
 }
-#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"],
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] + div[data-testid="stElementContainer"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {
     display: flex !important;
     flex-direction: column !important;
+    min-width: 0 !important;
 }
-#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div {
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div,
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] + div[data-testid="stElementContainer"] div[data-testid="stHorizontalBlock"] > div[data-testid="column"] > div {
     flex: 1 1 auto !important;
     width: 100% !important;
 }
-#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] div[data-testid="stMetric"] {
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] div[data-testid="stMetric"],
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] + div[data-testid="stElementContainer"] div[data-testid="stMetric"] {
     width: 100% !important;
     min-height: 142px !important;
-    height: 100% !important;
     box-sizing: border-box !important;
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
 }
-#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] div[data-testid="stMetricDelta"] {
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] div[data-testid="stMetricDelta"],
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] + div[data-testid="stElementContainer"] div[data-testid="stMetricDelta"] {
     min-height: 1.55rem !important;
 }
-#iams-kpi-start ~ div[data-testid="stHorizontalBlock"] div[data-testid="stMetric"]:not(:has([data-testid="stMetricDelta"]))::after {
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] div[data-testid="stMetric"]:not(:has([data-testid="stMetricDelta"]))::after,
+div[data-testid="stElementContainer"]:has(#iams-kpi-start) + div[data-testid="stElementContainer"] + div[data-testid="stElementContainer"] div[data-testid="stMetric"]:not(:has([data-testid="stMetricDelta"]))::after {
     content: "";
     display: block;
     min-height: 1.55rem;
     flex-shrink: 0;
 }
 
-/* ---- 📑 章节标题 ---- */
-h2 { color: #0f172a !important; font-weight: 800 !important; letter-spacing: -0.02em; }
-h3 { color: #1e293b !important; font-weight: 700 !important; letter-spacing: -0.01em; }
-h4 { color: #334155 !important; font-weight: 700 !important; }
-.stSubheader > div > div { color: #1e293b !important; font-weight: 700 !important; }
-
-/* ---- 📊 Tab 标签页美化 ---- */
+/* ---- Tab ---- */
 div[data-testid="stTabs"] [role="tablist"] {
-    background: #f1f5f9;
+    background: #fef2f2 !important;
+    border: 1px solid #fecaca !important;
     border-radius: 12px;
     padding: 4px;
-    border: none !important;
     gap: 2px;
 }
 div[data-testid="stTabs"] [role="tab"] {
     border-radius: 9px !important;
     font-weight: 600 !important;
     font-size: 0.88rem !important;
-    color: #64748b !important;
+    color: #78716c !important;
     padding: 0.4rem 1.1rem !important;
     border: none !important;
-    transition: all 0.2s !important;
 }
 div[data-testid="stTabs"] [role="tab"][aria-selected="true"] {
-    background: white !important;
-    color: #1e293b !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.12) !important;
+    background: #ffffff !important;
+    color: #991b1b !important;
+    box-shadow: 0 1px 6px rgba(196, 30, 58, 0.12) !important;
+    border-bottom: 2px solid #c9a227 !important;
 }
 
-/* ---- 🖱️ 按钮升级 ---- */
-div[data-testid="stButton"] button {
+/* ---- 主区按钮：红主色 + 金点缀 ---- */
+section[data-testid="stMain"] div[data-testid="stButton"] button {
     border-radius: 10px !important;
     font-weight: 600 !important;
-    font-size: 0.88rem !important;
     transition: all 0.2s ease !important;
 }
-div[data-testid="stButton"] button[kind="primary"] {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
-    border: none !important;
-    box-shadow: 0 2px 10px rgba(99,102,241,0.4) !important;
-    color: white !important;
+section[data-testid="stMain"] div[data-testid="stButton"] button[kind="primary"],
+section[data-testid="stMain"] button[data-testid="stBaseButton-primary"],
+section[data-testid="stMain"] [data-testid="stFormSubmitButton"] button,
+section[data-testid="stMain"] [data-testid="stFormSubmitButton"] button[kind="primary"] {
+    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important;
+    border: 1px solid #c9a227 !important;
+    box-shadow: 0 2px 10px rgba(185, 28, 28, 0.25) !important;
+    color: #ffffff !important;
 }
-div[data-testid="stButton"] button[kind="primary"]:hover {
-    box-shadow: 0 6px 18px rgba(99,102,241,0.55) !important;
+section[data-testid="stMain"] div[data-testid="stButton"] button[kind="primary"] p,
+section[data-testid="stMain"] div[data-testid="stButton"] button[kind="primary"] span,
+section[data-testid="stMain"] div[data-testid="stButton"] button[kind="primary"] div,
+section[data-testid="stMain"] button[data-testid="stBaseButton-primary"] p,
+section[data-testid="stMain"] button[data-testid="stBaseButton-primary"] span,
+section[data-testid="stMain"] button[data-testid="stBaseButton-primary"] div,
+section[data-testid="stMain"] [data-testid="stFormSubmitButton"] button p,
+section[data-testid="stMain"] [data-testid="stFormSubmitButton"] button span,
+section[data-testid="stMain"] [data-testid="stFormSubmitButton"] button div,
+section[data-testid="stMain"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] button[kind="primary"] p,
+section[data-testid="stMain"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] button[kind="primary"] span,
+section[data-testid="stMain"] [data-testid="stExpanderDetails"] div[data-testid="stButton"] button[kind="primary"] div {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+section[data-testid="stMain"] div[data-testid="stButton"] button[kind="primary"]:hover,
+section[data-testid="stMain"] [data-testid="stFormSubmitButton"] button:hover {
+    box-shadow: 0 4px 16px rgba(185, 28, 28, 0.35) !important;
     transform: translateY(-1px) !important;
+    color: #ffffff !important;
 }
-div[data-testid="stButton"] button[kind="secondary"]:hover {
-    border-color: #3b82f6 !important;
-    color: #3b82f6 !important;
+section[data-testid="stMain"] div[data-testid="stButton"] button[kind="secondary"],
+section[data-testid="stMain"] div[data-testid="stButton"] button:not([kind="primary"]) {
+    background: #ffffff !important;
+    border: 1px solid #fecaca !important;
+    color: #991b1b !important;
+}
+section[data-testid="stMain"] div[data-testid="stButton"] button[kind="secondary"]:hover {
+    border-color: #c9a227 !important;
+    background: #fffaf8 !important;
 }
 
-/* ---- 🗂️ 侧边栏暗色主题（文字统一浅色） ---- */
+/* ---- 表单 / 日期：纯白底，去掉灰块 ---- */
+section[data-testid="stMain"] input,
+section[data-testid="stMain"] textarea {
+    background: #ffffff !important;
+    border-color: #e7e5e4 !important;
+    color: #1c1917 !important;
+    border-radius: 10px !important;
+}
+section[data-testid="stMain"] [data-testid="stDateInput"] > div,
+section[data-testid="stMain"] [data-testid="stDateInput"] > div > div,
+section[data-testid="stMain"] [data-testid="stDateInput"] [data-baseweb="input"],
+section[data-testid="stMain"] [data-testid="stDateInput"] input {
+    background: #ffffff !important;
+    background-color: #ffffff !important;
+    color: #1c1917 !important;
+    border-color: #e7e5e4 !important;
+}
+section[data-testid="stMain"] [data-testid="stDateInput"] [data-baseweb="input"]:focus-within {
+    border-color: #c9a227 !important;
+    box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.35) !important;
+}
+section[data-testid="stMain"] [data-testid="stDateInput"] [data-testid="stWidgetLabel"],
+section[data-testid="stMain"] [data-testid="stDateInput"] [data-testid="stWidgetLabel"] p {
+    background: transparent !important;
+}
+#iams-section-metrics {
+    scroll-margin-top: var(--iams-sticky-stack-h, 88px);
+    position: relative;
+    z-index: 1;
+}
+
+/* ---- 侧边栏：暖白 + 红金导航 ---- */
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%) !important;
+    background: linear-gradient(180deg, #ffffff 0%, #fffaf8 100%) !important;
+    border-right: 1px solid #fde8e8 !important;
 }
 [data-testid="stSidebar"] .stMarkdown,
 [data-testid="stSidebar"] .stMarkdown p,
-[data-testid="stSidebar"] .stMarkdown li,
-[data-testid="stSidebar"] .stMarkdown small,
-[data-testid="stSidebar"] h1,
-[data-testid="stSidebar"] h2,
-[data-testid="stSidebar"] h3,
-[data-testid="stSidebar"] h4,
-[data-testid="stSidebar"] header,
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] h3,
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] [data-testid="stWidgetLabel"] p,
-[data-testid="stSidebar"] [data-testid="stWidgetLabel"] label,
 [data-testid="stSidebar"] [data-testid="stExpander"] summary,
 [data-testid="stSidebar"] [data-testid="stExpander"] summary p,
-[data-testid="stSidebar"] [data-testid="stExpander"] summary span,
-[data-testid="stSidebar"] [data-testid="stExpander"] p,
 [data-testid="stSidebar"] [data-testid="stPageLink"] a,
 [data-testid="stSidebar"] [data-testid="stPageLink"] p {
-    color: #e2e8f0 !important;
+    color: #44403c !important;
 }
 [data-testid="stSidebar"] a {
-    color: #93c5fd !important;
+    color: #b91c1c !important;
     font-weight: 600;
     text-decoration: none;
 }
-[data-testid="stSidebar"] a:hover { color: #bfdbfe !important; }
+[data-testid="stSidebar"] a:hover { color: #dc2626 !important; }
 [data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] {
-    background: rgba(255, 255, 255, 0.12) !important;
+    background: #fef2f2 !important;
     border-radius: 8px;
+    border-left: 3px solid #c9a227 !important;
 }
 [data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] a,
-[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] p,
-[data-testid="stSidebar"] a[aria-current="page"],
-[data-testid="stSidebar"] [data-testid="stPageLink-NavLink"][aria-current="page"] {
-    color: #ffffff !important;
+[data-testid="stSidebar"] [data-testid="stPageLink"][aria-current="page"] p {
+    color: #991b1b !important;
 }
 [data-testid="stSidebar"] details summary,
-[data-testid="stSidebar"] details summary * {
-    color: #f1f5f9 !important;
-}
-[data-testid="stSidebar"] hr { border-color: rgba(255,255,255,0.15) !important; }
+[data-testid="stSidebar"] details summary * { color: #1c1917 !important; }
+[data-testid="stSidebar"] hr { border-color: #fde8e8 !important; }
 /* 侧边栏 Expander：单层底色，避免 summary/内层再叠灰块 */
 [data-testid="stSidebar"] [data-testid="stExpander"],
 [data-testid="stSidebar"] [data-testid="stExpander"] > div {
@@ -265,9 +525,9 @@ div[data-testid="stButton"] button[kind="secondary"]:hover {
     box-shadow: none !important;
 }
 [data-testid="stSidebar"] [data-testid="stExpander"] details {
-    border: 1px solid rgba(255,255,255,0.12) !important;
-    border-radius: 8px !important;
-    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid #fde8e8 !important;
+    border-radius: 10px !important;
+    background: #ffffff !important;
     overflow: hidden;
 }
 [data-testid="stSidebar"] [data-testid="stExpander"] summary,
@@ -281,11 +541,11 @@ div[data-testid="stButton"] button[kind="secondary"]:hover {
     box-shadow: none !important;
 }
 [data-testid="stSidebar"] [data-testid="stExpander"] summary {
-    color: #f1f5f9 !important;
+    color: #1c1917 !important;
     padding: 0.55rem 0.7rem !important;
 }
 [data-testid="stSidebar"] [data-testid="stExpander"] details[open] summary {
-    border-bottom: 1px solid rgba(255,255,255,0.08) !important;
+    border-bottom: 1px solid #fde8e8 !important;
 }
 [data-testid="stSidebar"] [data-testid="stExpander"] [data-testid="stExpanderDetails"] {
     padding: 0.5rem 0.7rem 0.7rem !important;
@@ -301,36 +561,43 @@ div[data-testid="stButton"] button[kind="secondary"]:hover {
 [data-testid="stSidebar"] [data-testid="stCheckbox"] span,
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] p,
 [data-testid="stSidebar"] [data-testid="stCaptionContainer"] {
-    color: #e2e8f0 !important;
+    color: #78716c !important;
 }
 [data-testid="stSidebar"] [data-testid="stButton"] button,
 [data-testid="stSidebar"] [data-testid="stExpanderDetails"] [data-testid="stButton"] button {
-    background-color: rgba(255,255,255,0.08) !important;
-    border: 1px solid rgba(255,255,255,0.18) !important;
-    color: #f1f5f9 !important;
+    background: #ffffff !important;
+    border: 1px solid #fecaca !important;
+    color: #991b1b !important;
     box-shadow: none !important;
 }
 [data-testid="stSidebar"] [data-testid="stButton"] button[kind="secondary"],
-[data-testid="stSidebar"] [data-testid="stButton"] button[kind="tertiary"],
 [data-testid="stSidebar"] [data-testid="stButton"] button:not([kind="primary"]) {
-    background-color: rgba(255,255,255,0.08) !important;
-    color: #f1f5f9 !important;
+    background: #ffffff !important;
+    color: #991b1b !important;
 }
 [data-testid="stSidebar"] [data-testid="stButton"] button:hover {
-    background-color: rgba(255,255,255,0.12) !important;
-    border-color: rgba(255,255,255,0.28) !important;
-    color: #ffffff !important;
+    background: #fef2f2 !important;
+    border-color: #c9a227 !important;
+    color: #b91c1c !important;
 }
 [data-testid="stSidebar"] [data-testid="stButton"] button p,
 [data-testid="stSidebar"] [data-testid="stButton"] button span,
 [data-testid="stSidebar"] [data-testid="stButton"] button div {
     color: inherit !important;
 }
-[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] {
-    background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
-    border: none !important;
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"],
+[data-testid="stSidebar"] [data-testid="stExpanderDetails"] [data-testid="stButton"] button[kind="primary"] {
+    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%) !important;
+    border: 1px solid #c9a227 !important;
     color: #ffffff !important;
-    box-shadow: 0 2px 8px rgba(99,102,241,0.35) !important;
+    box-shadow: 0 2px 10px rgba(185, 28, 28, 0.2) !important;
+}
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] p,
+[data-testid="stSidebar"] [data-testid="stButton"] button[kind="primary"] span,
+[data-testid="stSidebar"] [data-testid="stExpanderDetails"] [data-testid="stButton"] button[kind="primary"] p,
+[data-testid="stSidebar"] [data-testid="stExpanderDetails"] [data-testid="stButton"] button[kind="primary"] span {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
 }
 [data-testid="stSidebar"] [data-testid="stTextInput"] input,
 [data-testid="stSidebar"] [data-testid="stDateInput"] input {
@@ -341,30 +608,28 @@ div[data-testid="stButton"] button[kind="secondary"]:hover {
     color: #64748b !important;
 }
 
-/* ---- 📋 数据表格 ---- */
-div[data-testid="stDataFrame"] {
-    border-radius: 12px !important;
-    overflow: hidden !important;
-    box-shadow: 0 1px 4px rgba(0,0,0,0.06) !important;
-}
+hr { border-color: #fde8e8 !important; margin: 1.5rem 0 !important; }
 
-/* ---- 📦 Container / Expander 圆角（仅主内容区，不影响侧边栏） ---- */
-section[data-testid="stMain"] [data-testid="stExpander"] {
-    border-radius: 12px !important;
-    border-color: #e2e8f0 !important;
-}
-div[data-testid="stVerticalBlockBorderWrapper"] > div {
-    border-radius: 14px !important;
-}
-
-/* ---- 分割线 ---- */
-hr { border-color: #e2e8f0 !important; margin: 1.5rem 0 !important; }
-
-/* ---- Radio 按钮（视图切换器）---- */
-div[data-testid="stRadio"] label {
+div[data-testid="stRadio"] label,
+div[data-testid="stSelectbox"] label,
+div[data-testid="stSelectbox"] [data-testid="stWidgetLabel"] p {
     font-weight: 600 !important;
-    font-size: 0.88rem !important;
+    color: #57534e !important;
 }
+div[data-testid="stRadio"] [role="radiogroup"] {
+    background: #fef2f2 !important;
+    border-radius: 10px !important;
+    padding: 4px 8px !important;
+}
+div[data-testid="stRadio"] [role="radiogroup"] label,
+div[data-testid="stRadio"] [role="radiogroup"] label span,
+div[data-testid="stRadio"] [role="radiogroup"] label p {
+    color: #44403c !important;
+}
+div[data-testid="stRadio"] [role="radiogroup"] label[data-baseweb="radio"] > div:first-child {
+    border-color: #c9a227 !important;
+}
+section[data-testid="stMain"] .stMarkdown em { color: #78716c !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -392,28 +657,145 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 2. 使用 page_link 手工绘制我们想要的中文导航
-with st.sidebar:
-    st.markdown("### 🧭 系统导航")
-    # 这里的文件名必须跟你实际的文件名完全一致，label 则是你希望显示的中文
-    st.page_link("app.py", label="🏠 系统控制台")
-    st.page_link("pages/analytics.py", label="📈 投资分析看板")
-    st.markdown("---") # 画一条分割线，让布局更美观
-
-# 💡 核心机制：检查 URL 中是否携带专属访问参数
+# 2. 侧边栏：导航 + 设置（客户模式隐藏）
 shared_user = st.query_params.get("user")
 shared_acc = st.query_params.get("acc")
 is_client_mode = (shared_user is not None) and (shared_acc is not None)
 
 if is_client_mode:
+    ui.init_app_session(shared_user, query_params=st.query_params)
+else:
+    ui.init_app_session(st.session_state.get("current_user"), query_params=st.query_params)
+
+st.markdown(ui.prefs_css(), unsafe_allow_html=True)
+
+if not is_client_mode:
+    ui.render_sidebar_nav()
+    _settings_user = st.session_state.get("current_user") if st.session_state.get("logged_in") else None
+    ui.render_settings_panel(_settings_user, show_report_default=True)
+
+if is_client_mode:
     # 🌟 客户模式：隐身降权，强行隐藏左侧边栏和顶部导航栏
-    st.markdown("""<style>[data-testid="collapsedControl"] {display: none;} [data-testid="stSidebar"] {display: none;} header {display: none;}</style>""", unsafe_allow_html=True)
+    st.markdown("""
+    <style>
+        [data-testid="collapsedControl"] {display: none !important;}
+        [data-testid="stSidebar"] {display: none !important;}
+        header, [data-testid="stHeader"], [data-testid="stDecoration"] {display: none !important;}
+        [data-testid="stAppViewContainer"],
+        [data-testid="stAppViewBlockContainer"],
+        section[data-testid="stMain"],
+        section[data-testid="stMain"] > div,
+        .main {
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+        }
+        section[data-testid="stMain"] .block-container {
+            padding-top: 0 !important;
+            margin-top: 0 !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            max-width: 1400px !important;
+        }
+        section[data-testid="stMain"] [data-testid="stVerticalBlock"] > div:first-child {
+            margin-top: 0 !important;
+            padding-top: 0 !important;
+        }
+        section[data-testid="stMain"] [data-testid="stVerticalBlock"] {
+            gap: 0.75rem !important;
+        }
+        /* 客户顶栏：fixed 贴顶（Streamlit 内滚时 sticky 常失效） */
+        .iams-client-topbar {
+            position: relative;
+        }
+        .iams-client-topbar.is-fixed-top {
+            position: fixed !important;
+            top: 0 !important;
+            z-index: 100000 !important;
+            margin: 0 !important;
+            border: 1px solid #fde8e8;
+            border-top: none;
+            border-radius: 0 0 14px 14px;
+            background: #fffaf8 !important;
+            box-shadow: 0 4px 18px rgba(196, 30, 58, 0.12);
+            overflow: hidden;
+        }
+        #client-topbar-spacer {
+            display: block;
+            width: 100%;
+            margin: 0 0 0.85rem 0;
+        }
+        .iams-client-topbar::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #c9a227 0%, #e8c547 40%, #dc2626 100%);
+        }
+        .iams-client-topbar__inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.25rem;
+            padding: 0.9rem 1.15rem;
+        }
+        .iams-client-topbar__center {
+            flex: 1;
+            text-align: center;
+            min-width: 0;
+        }
+        .iams-client-topbar__sub {
+            font-size: 0.68rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            color: #a8a29e;
+            text-transform: uppercase;
+            margin-bottom: 0.35rem;
+        }
+        .iams-client-topbar__title {
+            font-size: 1.42rem;
+            font-weight: 800;
+            color: #991b1b;
+            letter-spacing: -0.02em;
+            line-height: 1.25;
+            margin: 0;
+        }
+        .iams-client-topbar__line {
+            width: 44px;
+            height: 3px;
+            margin: 0.5rem auto 0;
+            background: linear-gradient(90deg, #c9a227, #dc2626);
+            border-radius: 2px;
+        }
+        .iams-client-topbar__side {
+            flex-shrink: 0;
+            width: 7.5rem;
+        }
+        .iams-client-topbar__btn {
+            flex-shrink: 0;
+            width: 7.5rem;
+            padding: 0.55rem 0.5rem;
+            border: 1px solid #fecaca;
+            border-radius: 10px;
+            background: #ffffff;
+            color: #991b1b;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            font-family: inherit;
+            white-space: nowrap;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .iams-client-topbar__btn:hover {
+            border-color: #c9a227;
+            background: #fffaf8;
+        }
+    </style>
+    """, unsafe_allow_html=True)
     current_user = shared_user
     active_acc = shared_acc
     # 免密强制提取该账户数据
     st.session_state.trade_log = db.get_trades(current_user, active_acc)
     st.session_state.current_loaded_acc = active_acc
-    st.title(f"📊 账户：{active_acc}")
 else:
     # 👨‍💻 管理员模式：执行严格的登录校验
     if not st.session_state.get('logged_in', False): st.switch_page("app.py")
@@ -427,68 +809,52 @@ else:
         st.session_state.trade_log = db.get_trades(current_user, active_acc)
         st.session_state.current_loaded_acc = active_acc
 
-    # 👇 ================= 新增：JS引擎跨域吸顶魔法 (终极防弹版) ================= 👇
-    col_title, col_back = st.columns([4, 1])
-    
-    # 1. 埋入隐形锚点，供 JS 追踪
-    col_title.markdown(f"<div id='admin-sticky-anchor'></div><h2 style='margin: 0; padding: 0;'>📊 投顾控制台：{active_acc} <span style='font-size:18px; color:gray;'>(所属用户:{current_user})</span></h2>", unsafe_allow_html=True)
-    
-    if col_back.button("⬅️ 返回大厅", width="stretch"):
-        st.session_state.pop('trade_log', None)
-        st.session_state.pop('current_loaded_acc', None)
-        st.switch_page("app.py")
-
-    # 2. 注入 JS 脚本，越过 Streamlit 的限制，直接操纵浏览器底层 DOM
+    st.markdown(
+        f"""
+        <div id="admin-topbar" class="iams-admin-topbar">
+            <div class="iams-admin-topbar__inner">
+                <div class="iams-admin-topbar__brand">
+                    <div class="iams-admin-topbar__sub">{i18n.t('admin.sub')}</div>
+                    <div class="iams-admin-topbar__title">📊 {i18n.t('admin.title', acc=active_acc)}</div>
+                    <div class="iams-admin-topbar__line"></div>
+                    <span class="iams-admin-topbar__meta">{i18n.t('admin.owner', user=current_user)}</span>
+                </div>
+                <a class="iams-admin-topbar__btn" href="/?clear_session=1">⬅️ {i18n.t('admin.back')}</a>
+            </div>
+        </div>
+        <div id="admin-topbar-spacer"></div>
+        """,
+        unsafe_allow_html=True,
+    )
     components.html(
         """
         <script>
-        // 延时 0.5 秒执行，确保 Streamlit 网页已经完全加载完毕
-        setTimeout(function() {
+        (function run() {
             try {
                 const doc = window.parent.document;
-                
-                // A. 强行解除 Streamlit 最外层的滚动锁定（给悬浮腾出空间）
-                const blockContainer = doc.querySelector('.block-container');
-                if (blockContainer) {
-                    blockContainer.style.overflow = 'visible';
+                const bar = doc.getElementById('admin-topbar');
+                const sp = doc.getElementById('admin-topbar-spacer');
+                const bc = doc.querySelector('.block-container');
+                if (!bar || !sp || !bc) return;
+                function pin() {
+                    const r = bc.getBoundingClientRect();
+                    bar.classList.add('is-fixed-top');
+                    bar.style.left = r.left + 'px';
+                    bar.style.width = r.width + 'px';
+                    bar.style.maxWidth = '1400px';
+                    sp.style.height = bar.offsetHeight + 'px';
                 }
-
-                // B. 顺藤摸瓜，找到我们的标题栏，给它贴上“悬浮许可”的标签
-                const anchor = doc.getElementById('admin-sticky-anchor');
-                if (anchor) {
-                    const horizontalBlock = anchor.closest('div[data-testid="stHorizontalBlock"]');
-                    if (horizontalBlock && horizontalBlock.parentElement) {
-                        horizontalBlock.parentElement.classList.add('my-sticky-header');
-                    }
-                }
-
-                // C. 将悬浮样式直接打入父网页的大脑 (<head>)，无视明暗主题切换！
-                if (!doc.getElementById('sticky-style-inject')) {
-                    const style = doc.createElement('style');
-                    style.id = 'sticky-style-inject';
-                    style.innerHTML = `
-                        .my-sticky-header {
-                            position: -webkit-sticky !important;
-                            position: sticky !important;
-                            top: 2.875rem !important; /* 刚好躲开系统菜单 */
-                            z-index: 99999 !important; /* 图层置于最顶，盖住所有图表 */
-                            background-color: var(--background-color, #ffffff) !important;
-                            padding-top: 15px !important;
-                            padding-bottom: 10px !important;
-                            border-bottom: 1px solid #e2e8f0 !important;
-                        }
-                    `;
-                    doc.head.appendChild(style);
-                }
-            } catch (e) {
-                console.log("Sticky Header JS Error:", e);
-            }
-        }, 500);
+                pin();
+                (doc.defaultView || window.parent).addEventListener('resize', pin);
+            } catch (e) {}
+        })();
+        setTimeout(run, 50);
+        setTimeout(run, 400);
         </script>
-        """, 
-        height=0, width=0
+        """,
+        height=0,
+        width=0,
     )
-    # 👆 ============================================================ 👆
 # ==========================================
 # 🧠 账户记忆模块：读取和保存开户基准日
 # ==========================================
@@ -514,116 +880,51 @@ def save_acc_last_type(user, acc, type_str):
     with open(ACCOUNT_CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=4)
 
-def get_acc_start_date(user, acc, default_date):
-    if os.path.exists(ACCOUNT_CONFIG_FILE):
-        try:
-            with open(ACCOUNT_CONFIG_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-            d_str = data.get(f"{user}_{acc}_start_date")
-            if d_str: return datetime.strptime(d_str, '%Y-%m-%d').date()
-        except: pass
-    return default_date
-
-def save_acc_start_date(user, acc, date_obj):
-    data = {}
-    if os.path.exists(ACCOUNT_CONFIG_FILE):
-        try:
-            with open(ACCOUNT_CONFIG_FILE, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        except: pass
-    data[f"{user}_{acc}_start_date"] = date_obj.strftime('%Y-%m-%d')
-    with open(ACCOUNT_CONFIG_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=4)
+get_acc_start_date = pe.get_acc_start_date
+save_acc_start_date = pe.save_acc_start_date
+ledger_net_principal = pe.ledger_net_principal
+net_principal_on_date = pe.net_principal_on_date
 
 # ==========================================
 # 1. 后台引擎：自动解析全局底层资产 (基准与个股解耦版)
-# ==========================================
-DATA_DIR = "financial_data"       # 📂 个股持仓数据目录
-INDEX_DIR = "all_indices_data"    # 📂 全市场指数数据目录
+DATA_DIR = pe.DATA_DIR
+INDEX_DIR = pe.INDEX_DIR
+BENCHMARK_NAME = pe.BENCHMARK_NAME
 
-# 🎯 终极接口：以后想换基准，只需在这里改名字！
-BENCHMARK_NAME = "上证指数"
+if not os.path.exists(DATA_DIR): st.error(i18n.t("err.no_data_dir", dir=DATA_DIR)); st.stop()
+if not os.path.exists(INDEX_DIR): st.error(i18n.t("err.no_data_dir", dir=INDEX_DIR)); st.stop()
 
-if not os.path.exists(DATA_DIR): st.error(f"❌ 找不到 '{DATA_DIR}' 文件夹！"); st.stop()
-if not os.path.exists(INDEX_DIR): st.error(f"❌ 找不到 '{INDEX_DIR}' 文件夹！"); st.stop()
+csv_files, stock_info, stock_names = pe.discover_stock_info()
+if not csv_files: st.error(i18n.t("err.no_stocks")); st.stop()
 
-csv_files = [f for f in os.listdir(DATA_DIR) if f.endswith('.csv')]
-if not csv_files: st.error("❌ 个股数据文件夹为空！"); st.stop()
+@st.cache_data(ttl=3600*12)
+def _cached_market_context(fingerprint):
+    return pe.get_market_context(fingerprint)
 
-# 解析个股中文名映射
-stock_info = {}
-for file in csv_files:
-    df_temp = pd.read_csv(os.path.join(DATA_DIR, file), nrows=1)
-    cols = [col for col in df_temp.columns if '收盘价' in col and col != f'{BENCHMARK_NAME}收盘价']
-    if cols:
-        stock_col = cols[0]
-        stock_info[file] = stock_col.replace('收盘价', '')
-
-stock_names = list(stock_info.values()) # 传给前端下拉菜单的股票池
-
-@st.cache_data(ttl=3600*12) # 12小时缓存，减少重复读取和计算压力
-def load_base_data(stock_files, benchmark):
-    # 💡 核心修复：现在系统会去 INDEX_DIR (all_indices_data) 里面找基准文件了！
-    index_path = os.path.join(INDEX_DIR, f"{benchmark}.csv")
-    if not os.path.exists(index_path):
-        st.error(f"❌ 找不到基准指数文件：{index_path}。请检查爬虫是否成功拉取。")
-        st.stop()
-        
-    pdf = pd.read_csv(index_path)
-    # 只抽取我们需要的数据（日期和基准收盘价）
-    pdf = pdf[['日期', f'{benchmark}收盘价']]
-    pdf['日期'] = pd.to_datetime(pdf['日期'])
-
-    # 遍历 financial_data 中的个股，无缝拼接到基准主干上
-    for file in stock_files:
-        if file not in stock_info: continue
-        df = pd.read_csv(os.path.join(DATA_DIR, file))
-        
-        # 统一时间格式
-        df['日期'] = pd.to_datetime(df['日期'])
-        s_name = stock_info[file]
-        
-        # 💡 核心平差系统数据层：准备合并的列（默认一定要有日期和复权收盘价）
-        cols_to_merge = ['日期', f'{s_name}收盘价']
-        
-        # 如果爬虫文件里带有不复权价格，给它穿上中文马甲并一起提取
-        if 'raw_close' in df.columns:
-            df.rename(columns={'raw_close': f'{s_name}不复权收盘价'}, inplace=True)
-            cols_to_merge.append(f'{s_name}不复权收盘价')
-            
-        # 精准合并到主表中
-        pdf = pd.merge(pdf, df[cols_to_merge], on='日期', how='outer')
-        
-    return pdf.sort_values('日期').reset_index(drop=True).ffill().bfill()
-
-def load_dividend_events(stock_names):
-    """从 dividend_data 文件夹加载所有持仓标的分红历史"""
-    all_divs = {}
-    DIV_DIR = "dividend_data"
-    for name in stock_names:
-        path = os.path.join(DIV_DIR, f"{name}_分红.csv")
-        if os.path.exists(path):
-            df = pd.read_csv(path)
-            df['日期'] = pd.to_datetime(df['日期']).dt.date
-            all_divs[name] = df
-    return all_divs
-
-portfolio_df = load_base_data(csv_files, BENCHMARK_NAME)
-global_min_date = portfolio_df['日期'].min().date()
-global_max_date = portfolio_df['日期'].max().date()
+_market_fp = pe.compute_market_fingerprint()
+_market_ctx = _cached_market_context(_market_fp)
+portfolio_df = _market_ctx.portfolio_df
+dividend_book = _market_ctx.dividend_book
+global_min_date = _market_ctx.global_min_date
+global_max_date = _market_ctx.global_max_date
 
 # ==========================================
 # 2. 侧边栏：管理员专区 (定义账户生命周期与动态添股)
 # ==========================================
 if not is_client_mode:
-    st.sidebar.header("⚙️ 内部管理员专区")
-    st.sidebar.markdown("设定账户的**物理开户日**。系统将仅统计该日期及之后的资金和交易。")
+    st.sidebar.header(i18n.e("admin.zone", "⚙️ "))
+    st.sidebar.markdown(i18n.t("admin.start_date_help"))
     
     # 读取该账户的专属开户记忆
     saved_date = get_acc_start_date(current_user, active_acc, global_min_date)
     saved_date = max(global_min_date, min(saved_date, global_max_date)) # 确保在合法范围内
     
-    account_start_date = st.sidebar.date_input("🗓️ 账户开户日 (基点)", value=saved_date, min_value=global_min_date, max_value=global_max_date)
+    account_start_date = st.sidebar.date_input(
+        i18n.e("admin.start_date", "🗓️ "),
+        value=saved_date,
+        min_value=global_min_date,
+        max_value=global_max_date,
+    )
     
     # 若被修改，立刻保存并触发系统重载
     if account_start_date != saved_date:
@@ -663,124 +964,29 @@ else:
     # 客户模式下，默认从最早有数据的日期开始算起
     account_start_date = get_acc_start_date(current_user, active_acc, global_min_date)
 
-# 💡 核心：生成“后台全量数据集”，剔除开户日之前的无效数据
-admin_df = portfolio_df[portfolio_df['日期'].dt.date >= account_start_date].copy().reset_index(drop=True)
-if admin_df.empty:
-    st.error("❌ 选定日期之后没有可用的行情数据。")
-    st.stop()
-
-
 # ==========================================
 # 3. 后台引擎：基于“开户日”运行撮合与回滚
 # ==========================================
 edited_trades = st.session_state.trade_log
-txns_by_date = {}
-for idx, row in edited_trades.dropna(subset=['日期', '操作类型', '实际结算总金额(¥)']).iterrows():
-    dt = pd.to_datetime(row['日期']).date()
-    if dt >= account_start_date: # 仅处理开户日之后的流水
-        if dt not in txns_by_date: txns_by_date[dt] = []
-        qty = float(row['数量(股)']) if pd.notnull(row['数量(股)']) else 0.0
-        price = float(row['成交单价(¥)']) if pd.notnull(row['成交单价(¥)']) else 0.0
-        txns_by_date[dt].append({'idx': idx, 'type': row['操作类型'], 'asset': str(row['标的']) if pd.notnull(row['标的']) else '', 'qty': qty, 'price': price, 'total': float(row['实际结算总金额(¥)'])})
 
-dates = admin_df['日期'].tolist()
-total_asset_series, cash_series, daily_fee_series, cum_fee_series, principal_series = [0.0]*len(dates), [0.0]*len(dates), [0.0]*len(dates), [0.0]*len(dates), [0.0]*len(dates)
-holdings_series = {name: [0.0] * len(dates) for name in stock_names}
-current_principal, current_cash, cumulative_fees = 0.0, 0.0, 0.0
-current_holdings = {name: 0.0 for name in stock_names}
+def _rollback_invalid_txn(txn):
+    st.session_state.trade_log = st.session_state.trade_log.drop(txn['idx'])
+    db.save_trades(current_user, active_acc, st.session_state.trade_log)
+    st.rerun()
 
-# 1. 预载分红账本
-dividend_book = load_dividend_events(stock_names)
-
-for i, row in admin_df.iterrows():
-    date = row['日期'].date()
-    daily_friction_cost = 0.0 
-    
-    # --- 💡 核心 A：分红/送股自动入账判定 ---
-    for asset, qty in current_holdings.items():
-        if qty > 0 and asset in dividend_book:
-            # 检查今天是不是该股的分红日
-            day_div = dividend_book[asset][dividend_book[asset]['日期'] == date]
-            if not day_div.empty:
-                div_info = day_div.iloc[0]
-                # 1. 现金分红入账：(持仓/10) * 每10股派息
-                cash_gain = (qty / 10.0) * div_info['每10股派息']
-                if cash_gain > 0:
-                    current_cash += cash_gain
-                    # st.toast(f"💰 {date} {asset} 分红入账: ¥{cash_gain:,.2f}") # 可选提示
-                
-                # 2. 送转股入账：(持仓/10) * (送股+转增)
-                new_shares = (qty / 10.0) * (div_info['每10股送股'] + div_info['每10股转增'])
-                if new_shares > 0:
-                    current_holdings[asset] += new_shares
-
-    # --- 💡 核心 B：交易流水处理 (回归真实单价) ---
-    for txn in txns_by_date.get(date, []):
-        is_valid = True 
-        if txn['type'] == '转入本金': 
-            current_cash += txn['total']; current_principal += txn['total']
-        elif txn['type'] == '提取现金': 
-            if current_cash >= txn['total']: 
-                current_cash -= txn['total']; current_principal -= txn['total']
-            else: is_valid = False
-        elif txn['type'] == '买入股票':
-            if not txn['asset'] or current_cash < txn['total']: is_valid = False
-            else:
-                current_holdings[txn['asset']] += txn['qty'] 
-                current_cash -= txn['total']
-                diff = txn['total'] - (txn['qty'] * txn['price'])
-                if diff > 0: daily_friction_cost += diff
-        elif txn['type'] == '卖出股票':
-            if not txn['asset'] or current_holdings.get(txn['asset'], 0) < txn['qty']: is_valid = False
-            else:
-                current_holdings[txn['asset']] -= txn['qty']
-                current_cash += txn['total']
-                diff = (txn['qty'] * txn['price']) - txn['total']
-                if diff > 0: daily_friction_cost += diff
-        # 管理费（内扣/外付）仅影响现金或水位线标记，不计入成本线（成本线=净本金）
-        elif txn['type'] == '提取管理费(内扣)':
-            if current_cash >= txn['total']:
-                current_cash -= txn['total']
-            else:
-                is_valid = False
-        elif txn['type'] == '结账重置(外付)':
-            pass
-
-        if not is_valid:
-            st.session_state.trade_log = st.session_state.trade_log.drop(txn['idx'])
-            db.save_trades(current_user, active_acc, st.session_state.trade_log)
-            st.rerun()
-            
-    # --- 💡 核心 C：总资产估值 (使用不复权真实市价) ---
-    # 这样除权当天股价下跌，你的持仓市值减少，但现金刚好增加，总资产保持平稳
-    total_market_val = 0.0
-    for name in stock_names:
-        price = row[f"{name}不复权收盘价"] if f"{name}不复权收盘价" in row else row[f"{name}收盘价"]
-        total_market_val += current_holdings[name] * price
-    
-    total_asset_series[i] = current_cash + total_market_val
-    cash_series[i] = current_cash; daily_fee_series[i] = daily_friction_cost; cumulative_fees += daily_friction_cost
-    cum_fee_series[i] = cumulative_fees; principal_series[i] = current_principal
-    for name in stock_names: holdings_series[name][i] = current_holdings[name]
-
-admin_df['总持仓市值'] = total_asset_series; admin_df['账户可用现金'] = cash_series
-admin_df['当日产生税费'] = daily_fee_series; admin_df['累计税费'] = cum_fee_series
-admin_df['累计净本金'] = principal_series
-for name in stock_names: admin_df[f'{name}_持仓'] = holdings_series[name]
-
-admin_df['每日净流入'] = admin_df['累计净本金'].diff().fillna(admin_df['累计净本金'])
-admin_df['前日总资产'] = admin_df['总持仓市值'].shift(1).fillna(0)
-admin_df['单日成本基数'] = admin_df['前日总资产'] + admin_df['每日净流入'].clip(lower=0)
-admin_df['单日盈亏'] = admin_df['总持仓市值'] - admin_df['前日总资产'] - admin_df['每日净流入']
-admin_df['账户当日收益率'] = np.where(
-    admin_df['单日成本基数'] > 0,
-    (admin_df['单日盈亏'] / admin_df['单日成本基数']) * 100,
-    0.0
+admin_df = pe.run_simulation(
+    portfolio_df,
+    stock_names,
+    dividend_book,
+    account_start_date,
+    edited_trades,
+    include_row_index=True,
+    on_invalid_txn=_rollback_invalid_txn,
 )
-admin_df['精确组合净值'] = (1.0 + admin_df['账户当日收益率'] / 100.0).cumprod()
-
-# 👇 核心修复：把丢失的大盘单日收益率补回来！
-admin_df['大盘当日收益率'] = admin_df[f'{BENCHMARK_NAME}收盘价'].pct_change().fillna(0) * 100
+if admin_df.empty:
+    st.error(i18n.t("err.no_dates"))
+    st.stop()
+admin_df = pe.enrich_admin_metrics(admin_df, BENCHMARK_NAME)
 
 # 获取最新一天作为管理后台的状态快照
 admin_latest = admin_df.iloc[-1]
@@ -813,16 +1019,18 @@ if not is_client_mode:
                 t_date = c1.date_input("📅 操作日期", value=global_max_date, min_value=account_start_date, max_value=global_max_date)
                 
                 # 1. 定义选项列表
-                type_options = ['转入本金', '买入股票', '卖出股票', '提取现金']
-                # 2. 从记忆库读取上一次的操作类型
+                type_options = i18n.tx_entry_options()
                 last_type = get_acc_last_type(current_user, active_acc, "转入本金")
-                # 3. 计算该类型在列表中的索引（index）
                 try:
                     default_idx = type_options.index(last_type)
                 except ValueError:
                     default_idx = 0
-                # 4. 渲染选择框，并设定默认索引
-                t_type = c2.selectbox("🔄 操作类型", type_options, index=default_idx)
+                t_type = c2.selectbox(
+                    i18n.t("admin.trade_type"),
+                    type_options,
+                    index=default_idx,
+                    format_func=i18n.tx_label,
+                )
                                 
                 if t_type in ['买入股票', '卖出股票']:
                     c3, c4, c5 = st.columns(3)
@@ -934,8 +1142,8 @@ if not is_client_mode:
     # ==========================================
     st.markdown("""
 <div style="display:flex;align-items:center;gap:10px;margin:1.2rem 0 0.8rem;">
-    <div style="width:4px;height:24px;background:linear-gradient(180deg,#3b82f6,#8b5cf6);border-radius:2px;flex-shrink:0;"></div>
-    <span style="font-size:1.1rem;font-weight:800;color:#0f172a;">📊 账户历史操作全景图</span>
+    <div style="width:4px;height:24px;background:linear-gradient(180deg,#c9a227,#dc2626);border-radius:2px;flex-shrink:0;"></div>
+    <span style="font-size:1.1rem;font-weight:800;color:#991b1b;">📊 账户历史操作全景图</span>
 </div>""", unsafe_allow_html=True)
     admin_fig = go.Figure()
     
@@ -1019,8 +1227,8 @@ if not is_client_mode:
     st.markdown("---")
     st.markdown("""
 <div style="display:flex;align-items:center;gap:10px;margin:1.2rem 0 0.8rem;">
-    <div style="width:4px;height:24px;background:linear-gradient(180deg,#f59e0b,#ef4444);border-radius:2px;flex-shrink:0;"></div>
-    <span style="font-size:1.1rem;font-weight:800;color:#0f172a;">💰 管理费与结算周期管理</span>
+    <div style="width:4px;height:24px;background:linear-gradient(180deg,#c9a227,#b91c1c);border-radius:2px;flex-shrink:0;"></div>
+    <span style="font-size:1.1rem;font-weight:800;color:#991b1b;">💰 管理费与结算周期管理</span>
 </div>""", unsafe_allow_html=True)
     
     log_df = st.session_state.trade_log
@@ -1133,7 +1341,7 @@ if not is_client_mode:
 
     # 👇 时光机同步兼容双轨制
     with st.expander("🛠️ 强制补录历史结账 (防止收益回撤错失结算点)", expanded=False):
-        st.markdown("<span style='font-size:13px; color:gray;'>即使历史最高峰溢出了约定目标，系统也会智能截断，只收取达标部分的费用，将多余收益无损继承到新周期。</span>", unsafe_allow_html=True)
+        st.markdown("<span class='iams-muted-note' style='font-size:13px;'>即使历史最高峰溢出了约定目标，系统也会智能截断，只收取达标部分的费用，将多余收益无损继承到新周期。</span>", unsafe_allow_html=True)
         
         m_col1, m_col2 = st.columns(2)
         manual_date = m_col1.date_input("📅 选择历史巅峰达标日", value=pd.Timestamp(global_max_date).date(), min_value=last_watermark_date, max_value=pd.Timestamp(global_max_date).date())
@@ -1211,6 +1419,13 @@ if not is_client_mode:
         st.markdown(f"*(截至全量最新：**{snap_date_str}** 收盘)*")
         st.metric("💵 可用现金储备", f"¥{snap_cash:,.2f}")
         st.metric("📉 累计交易损耗 (含税费)", f"¥{snap_fees:,.2f}", f"-{snap_fees:,.2f}", delta_color="inverse")
+        _snap_d = pd.Timestamp(snap_date_str).date()
+        _snap_principal = net_principal_on_date(admin_df, _snap_d)
+        _led_net, _led_in, _led_out = ledger_net_principal(edited_trades, account_start_date, _snap_d)
+        st.metric("📊 累计净本金", f"¥{_snap_principal:,.2f}")
+        st.caption(f"账本核对：注资 ¥{_led_in:,.2f} − 提取 ¥{_led_out:,.2f} = ¥{_led_net:,.2f}")
+        if abs(_snap_principal - _led_net) > 0.02:
+            st.warning("累计净本金与账本合计不一致，请核对开户日与流水。")
 
     st.markdown("---")
     st.markdown("##### 📋 内部历史指令账本 (管理员维护区)")
@@ -1360,8 +1575,8 @@ if not is_client_mode:
     # 👇 升级版：后台投顾分析撰写与管理面板
     st.markdown("""
 <div style="display:flex;align-items:center;gap:10px;margin:1.5rem 0 0.8rem;">
-    <div style="width:4px;height:24px;background:linear-gradient(180deg,#10b981,#06b6d4);border-radius:2px;flex-shrink:0;"></div>
-    <span style="font-size:1.1rem;font-weight:800;color:#0f172a;">📝 投顾研报寄语管理</span>
+    <div style="width:4px;height:24px;background:linear-gradient(180deg,#e8c547,#dc2626);border-radius:2px;flex-shrink:0;"></div>
+    <span style="font-size:1.1rem;font-weight:800;color:#991b1b;">📝 投顾研报寄语管理</span>
 </div>""", unsafe_allow_html=True)
     
     # 自动生成当前对应的三个报告期名称，用于绑定
@@ -1523,8 +1738,8 @@ if not is_client_mode:
                             st.session_state[confirm_key] = False
                             st.rerun()
 
-    with st.expander("🔗 获取发送给客户的专属汇报链接", expanded=False):
-        st.info("💡 请选择客户打开链接时默认看到的报告维度，然后一键复制下方完整链接。")
+    with st.expander(i18n.e("share.title", "🔗 "), expanded=False):
+        st.info(i18n.t("share.hint"))
         
         # 🚀 魔法时刻：向浏览器前端发送 JS 指令，获取当前的真实根域名
         current_origin = st_javascript("window.location.origin")
@@ -1536,85 +1751,58 @@ if not is_client_mode:
         # 完美的动态 URL 拼接
         BASE_URL = f"{current_origin}/analytics"
         
-        link_view_mode = st.radio("设置链接的默认视角：", ["月报视图", "季报视图", "年报视图"], horizontal=True)
-        view_code = "month"
-        if link_view_mode == "季报视图": view_code = "quarter"
-        elif link_view_mode == "年报视图": view_code = "year"
-        
-        # 智能拼接完整公网链接
-        share_url = f"{BASE_URL}/?user={current_user}&acc={active_acc}&view={view_code}" 
-        
-        # 直接展示完整链接，方便一键复制
+        link_view_mode = st.radio(
+            i18n.t("share.view_pick"),
+            ["month", "quarter", "year"],
+            format_func=lambda x: i18n.t(f"share.view_{x}"),
+            horizontal=True,
+        )
+        share_url = f"{BASE_URL}/?user={current_user}&acc={active_acc}&view={link_view_mode}&lang={i18n.lang()}"
         st.code(share_url, language="text")
-        # 附赠一个小功能：直接生成可点击的超链接，方便你自己做测试
-        st.markdown(f"👉 **[点击这里，模拟客户在公网直接打开]({share_url})**")
+        st.markdown(f"👉 **[{i18n.t('share.test_link')}]({share_url})**")
 
 # ==============================================================================
 # ==============================================================================
 # 5. 前台 UI：客户展示大屏 (物理隔离持仓底牌，统一多维分析)
 # ==============================================================================
 
-st.markdown("<br><br>", unsafe_allow_html=True)
+if not is_client_mode:
+    st.markdown("<br><br>", unsafe_allow_html=True)
+    st.markdown("<div id='client-scroll-trigger' style='height: 1px; width: 100%; margin-bottom: -1px;'></div>", unsafe_allow_html=True)
 
-# 👇 关键0：在这里埋下一个隐形的“滚动触发器”，作为物理碰撞的检测线
-st.markdown("<div id='client-scroll-trigger' style='height: 1px; width: 100%; margin-bottom: -1px;'></div>", unsafe_allow_html=True)
-
-# 💡 视觉优化：使用 1:4:1 的绝对对称列，确保中间的标题完美居中全局，右侧按钮紧贴屏幕边缘
-c_empty, c_title, c_print = st.columns([1, 4, 1])
-
-with c_title:
-    st.markdown("""
-    <div id='client-sticky-anchor'></div>
-    <div style="
-        background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
-        border-radius: 16px;
-        padding: 1.35rem 2rem 1.45rem;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(255,255,255,0.85) inset;
-        border: 1px solid #e2e8f0;
-        position: relative;
-        overflow: hidden;
-        margin-bottom: 0.4rem;
-    ">
-        <div style="
-            position: absolute; top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #3b82f6 0%, #8b5cf6 50%, #06b6d4 100%);
-            border-radius: 16px 16px 0 0;
-        "></div>
-        <div style="
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            background: radial-gradient(ellipse 80% 120% at 20% 0%, rgba(59,130,246,0.06) 0%, transparent 55%),
-                         radial-gradient(ellipse 70% 100% at 85% 100%, rgba(139,92,246,0.05) 0%, transparent 50%);
-            pointer-events: none;
-        "></div>
-        <div style="font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; color: #64748b; text-transform: uppercase; margin-bottom: 0.4rem; position: relative;">Investment Performance Report</div>
-        <div style="font-size: 1.48rem; font-weight: 800; color: #0f172a; margin: 0; letter-spacing: -0.02em; position: relative;">🌐 客户汇报与展示大屏</div>
-        <div style="width: 44px; height: 3px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); border-radius: 2px; margin: 0.65rem auto 0; position: relative;"></div>
-    </div>
-    """, unsafe_allow_html=True)
-
-with c_print:
-    components.html(
-        """
-        <div style="display: flex; justify-content: flex-end; align-items: center; height: 100%; padding-top: 10px;">
-            <button onclick="window.parent.print()" style="
-                padding: 9px 18px;
-                background: #ffffff;
-                color: #334155;
-                border: 1px solid #e2e8f0;
-                border-radius: 10px;
-                font-weight: 600;
-                cursor: pointer;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                font-size: 13px;
-                box-shadow: 0 1px 3px rgba(15,23,42,0.06);
-                letter-spacing: 0.02em;
-            ">🖨️ 导出 PDF</button>
+# 客户大屏顶栏（客户链接：单块融合贴顶吸顶；管理员预览：居中卡片）
+if is_client_mode:
+    st.markdown(
+        f"""
+        <div id="client-topbar" class="iams-client-topbar">
+            <div class="iams-client-topbar__inner">
+                <div class="iams-client-topbar__side" aria-hidden="true"></div>
+                <div class="iams-client-topbar__center">
+                    <div class="iams-client-topbar__sub">{i18n.t('client.sub', acc=active_acc)}</div>
+                    <div class="iams-client-topbar__title">🌐 {i18n.t('client.title')}</div>
+                    <div class="iams-client-topbar__line"></div>
+                </div>
+                <button type="button" class="iams-client-topbar__btn" onclick="window.print()">🖨️ {i18n.t('client.export_pdf')}</button>
+            </div>
         </div>
+        <div id="client-topbar-spacer"></div>
         """,
-        height=55
+        unsafe_allow_html=True,
     )
+else:
+    _hdr_pad_l, _hdr_left, _hdr_right = st.columns([1, 4, 1])
+    with _hdr_left:
+        st.markdown(f"""
+        <div id="client-sticky-anchor"></div>
+        <div class="iams-client-banner">
+            <div class="iams-banner-sub">Investment Performance Report</div>
+            <div class="iams-banner-title">🌐 {i18n.t('client.title')}</div>
+            <div style="width:44px;height:3px;background:linear-gradient(90deg,#c9a227,#dc2626);border-radius:2px;margin:0.55rem auto 0;"></div>
+        </div>
+        """, unsafe_allow_html=True)
+    with _hdr_right:
+        if st.button(f"🖨️ {i18n.t('client.export_pdf')}", type="secondary", key="client_export_pdf", use_container_width=True):
+            st_javascript("window.parent.print();")
 
 # 👇 ================= 新增：客户大屏 JS 碰撞推挤魔法 ================= 👇
 components.html(
@@ -1624,66 +1812,54 @@ components.html(
         try {
             const doc = window.parent.document;
             
-            // 1. 基础悬浮设置
             const blockContainer = doc.querySelector('.block-container');
-            if (blockContainer) blockContainer.style.overflow = 'visible';
+            const pwin = doc.defaultView || window.parent;
 
-            const anchor = doc.getElementById('client-sticky-anchor');
-            if (anchor) {
-                const horizontalBlock = anchor.closest('div[data-testid="stHorizontalBlock"]');
-                if (horizontalBlock && horizontalBlock.parentElement) {
-                    horizontalBlock.parentElement.classList.add('client-sticky-header');
+            const adminTopbar = doc.getElementById('admin-topbar');
+            const adminSpacer = doc.getElementById('admin-topbar-spacer');
+            if (adminTopbar && adminSpacer && blockContainer) {
+                function pinAdminTopbar() {
+                    const bcRect = blockContainer.getBoundingClientRect();
+                    adminTopbar.classList.add('is-fixed-top');
+                    adminTopbar.style.left = bcRect.left + 'px';
+                    adminTopbar.style.width = bcRect.width + 'px';
+                    adminTopbar.style.maxWidth = '1400px';
+                    adminSpacer.style.height = adminTopbar.offsetHeight + 'px';
+                    doc.documentElement.style.setProperty('--iams-admin-h', adminTopbar.offsetHeight + 'px');
+                }
+                pinAdminTopbar();
+                pwin.addEventListener('resize', pinAdminTopbar);
+                if (typeof ResizeObserver !== 'undefined') {
+                    new ResizeObserver(pinAdminTopbar).observe(blockContainer);
+                    new ResizeObserver(pinAdminTopbar).observe(adminTopbar);
+                }
+                setTimeout(pinAdminTopbar, 300);
+                setTimeout(pinAdminTopbar, 1200);
+            }
+
+            const clientTopbar = doc.getElementById('client-topbar');
+            const topbarSpacer = doc.getElementById('client-topbar-spacer');
+            if (clientTopbar && topbarSpacer && blockContainer) {
+                function pinClientTopbar() {
+                    const bcRect = blockContainer.getBoundingClientRect();
+                    clientTopbar.classList.add('is-fixed-top');
+                    clientTopbar.style.left = bcRect.left + 'px';
+                    clientTopbar.style.width = bcRect.width + 'px';
+                    clientTopbar.style.maxWidth = '1400px';
+                    topbarSpacer.style.height = clientTopbar.offsetHeight + 'px';
+                }
+                pinClientTopbar();
+                pwin.addEventListener('resize', pinClientTopbar);
+                if (typeof ResizeObserver !== 'undefined') {
+                    new ResizeObserver(pinClientTopbar).observe(blockContainer);
                 }
             }
 
-            if (!doc.getElementById('client-sticky-style-inject')) {
-                const style = doc.createElement('style');
-                style.id = 'client-sticky-style-inject';
-                style.innerHTML = `
-                    .client-sticky-header {
-                        position: -webkit-sticky !important;
-                        position: sticky !important;
-                        top: 2.875rem !important; 
-                        z-index: 99998 !important; 
-                        background-color: var(--background-color, #ffffff) !important;
-                        padding-top: 15px !important;
-                        padding-bottom: 10px !important;
-                        margin-top: -15px !important;
-                        border-bottom: 1px solid #e2e8f0 !important;
-                    }
-                `;
-                doc.head.appendChild(style);
+            const metricsSection = doc.getElementById('iams-section-metrics');
+            if (metricsSection) {
+                const adminH = parseInt(getComputedStyle(doc.documentElement).getPropertyValue('--iams-admin-h'), 10) || 72;
+                metricsSection.style.scrollMarginTop = adminH + 'px';
             }
-
-            // --- 🎯 核心特效：实时碰撞检测与向上推挤 ---
-            doc.addEventListener('scroll', function() {
-                // 找到我们刚才埋下的隐形触发器 和 上方的投顾控制台
-                const trigger = doc.getElementById('client-scroll-trigger');
-                const adminHeader = doc.querySelector('.my-sticky-header');
-                
-                if (trigger && adminHeader) {
-                    const triggerRect = trigger.getBoundingClientRect();
-                    const adminHeight = adminHeader.offsetHeight || 60; // 获取控制台高度
-                    const stickyThreshold = 46; // 悬浮基准线 (2.875rem ≈ 46px)
-                    
-                    // 阶段A：当客户大屏撞上投顾控制台时，按像素等比例将其向上推走
-                    if (triggerRect.top <= stickyThreshold + adminHeight && triggerRect.top > stickyThreshold) {
-                        const pushAmount = (stickyThreshold + adminHeight) - triggerRect.top;
-                        adminHeader.style.transform = 'translateY(-' + pushAmount + 'px)';
-                        adminHeader.style.visibility = 'visible';
-                    } 
-                    // 阶段B：客户大屏完全就位，投顾控制台被彻底顶出屏幕
-                    else if (triggerRect.top <= stickyThreshold) {
-                        adminHeader.style.transform = 'translateY(-' + adminHeight + 'px)';
-                        adminHeader.style.visibility = 'hidden'; // 隐藏防误触
-                    } 
-                    // 阶段C：往回滚，投顾控制台复位
-                    else {
-                        adminHeader.style.transform = 'translateY(0px)';
-                        adminHeader.style.visibility = 'visible';
-                    }
-                }
-            }, true); // useCapture=true 确保精准捕获滚动轴
 
         } catch (e) {
             console.log("Client Sticky Header JS Error:", e);
@@ -1697,19 +1873,19 @@ components.html(
 
 st.markdown("<hr style='margin-top: 5px; margin-bottom: 20px;'>", unsafe_allow_html=True)
 
-st.markdown("""
-<div style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.2rem;">
+st.markdown(f"""
+<div id="iams-section-metrics" style="display: flex; align-items: center; gap: 12px; margin-bottom: 1.2rem;">
     <div style="
         width: 4px; height: 28px;
-        background: linear-gradient(180deg, #3b82f6, #8b5cf6);
+        background: linear-gradient(180deg, #c9a227, #dc2626);
         border-radius: 2px; flex-shrink: 0;
     "></div>
     <div>
-        <div style="font-size: 1.22rem; font-weight: 800; color: #0f172a; letter-spacing: -0.01em; line-height: 1.2;">
-            📊 核心指标与业绩分析曲线
+        <div style="font-size: 1.22rem; font-weight: 800; color: #991b1b; letter-spacing: -0.01em; line-height: 1.2;">
+            📊 {i18n.t('metrics.section')}
         </div>
-        <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 500; margin-top: 2px; letter-spacing: 0.02em;">
-            PERFORMANCE METRICS &amp; ANALYTICS
+        <div style="font-size: 0.75rem; color: #78716c; font-weight: 500; margin-top: 2px; letter-spacing: 0.02em;">
+            {i18n.t('metrics.section_sub')}
         </div>
     </div>
 </div>
@@ -1743,58 +1919,66 @@ max_selectable_date = client_max_date if is_client_mode else global_max_date
 account_lifespan = (today - account_start_date).days
 
 # 💡 核心增强：按运行天数逐步解锁报告维度
-available_options = []
+view_option_keys: list[str] = []
+view_option_labels: dict[str, str] = {}
 if account_lifespan >= 30:
-    available_options.append(f"月度报告 (上月: {first_day_prev_month.strftime('%m')}月)")
+    key = "monthly"
+    view_option_keys.append(key)
+    view_option_labels[key] = i18n.t("view.monthly", month=first_day_prev_month.strftime("%m"))
     if account_lifespan >= 90:
-        available_options.append(f"季度报告 (上季: Q{prev_quarter})")
+        key = "quarterly"
+        view_option_keys.append(key)
+        view_option_labels[key] = i18n.t("view.quarterly", q=prev_quarter)
         if account_lifespan >= 365:
-         available_options.append(f"年度报告 (去年: {today.year - 1}年)")
+            key = "yearly"
+            view_option_keys.append(key)
+            view_option_labels[key] = i18n.t("view.yearly", year=today.year - 1)
+        view_option_keys.append("custom")
+        view_option_labels["custom"] = i18n.t("view.custom")
 
-        available_options.append("自定义区间") # 满一季度解锁自定义
-
-
-# 如果账户不满 30 天，没有任何选项可以看，直接拦截并提示
-if not available_options:
-    st.info(f"🐣 账户处于起步期（已运行 {account_lifespan} 天），暂无完整月度报表。")
-    st.warning("📌 提示：该区间内可用的底层行情数据不足（少于2天），无法生成有效测算曲线。")
+if not view_option_keys:
+    st.info(i18n.t("metrics.startup", days=account_lifespan))
+    st.warning(i18n.t("metrics.no_data"))
     st.stop()
 
-# 解析管理员通过 URL 传过来的默认视图参数
-url_view = st.query_params.get("view", "month")
-
-# 智能匹配默认选项（兜底为当前可用的第一个选项）
-default_opt = available_options[0]
-if url_view == "quarter" and f"季度报告 (上季: Q{prev_quarter})" in available_options:
-    default_opt = f"季度报告 (上季: Q{prev_quarter})"
-elif url_view == "year" and f"年度报告 (去年: {today.year - 1}年)" in available_options:
-    default_opt = f"年度报告 (去年: {today.year - 1}年)"
+url_view = st.query_params.get("view", prefs.get_pref("default_view"))
+view_key_map = {"month": "monthly", "quarter": "quarterly", "year": "yearly"}
+default_key = view_option_keys[0]
+pref_key = view_key_map.get(url_view, url_view)
+if pref_key in view_option_keys:
+    default_key = pref_key
 
 radio_key = f"view_mode_{active_acc}"
-if radio_key not in st.session_state or st.session_state[radio_key] not in available_options:
-    st.session_state[radio_key] = default_opt
+if radio_key not in st.session_state or st.session_state[radio_key] not in view_option_keys:
+    st.session_state[radio_key] = default_key
 
-view_mode = st.radio(
-    "⏱️ 请选择业绩分析维度", 
-    available_options, 
+view_mode_key = st.radio(
+    i18n.t("metrics.pick_dim"),
+    view_option_keys,
+    format_func=lambda k: view_option_labels[k],
     horizontal=True,
-    key=radio_key
+    key=radio_key,
 )
 
 st.markdown("<br>", unsafe_allow_html=True)
 
-if "月度报告" in view_mode:
+if view_mode_key == "monthly":
     perf_start, perf_end = first_day_prev_month, last_day_prev_month
-elif "季度报告" in view_mode:
+elif view_mode_key == "quarterly":
     perf_start, perf_end = first_day_prev_q, last_day_prev_q
-elif "年度报告" in view_mode:
+elif view_mode_key == "yearly":
     perf_start, perf_end = first_day_prev_year, last_day_prev_year
 else:
     c_date, c_space = st.columns([1, 2])
-    # 💡 限制客户的日历选择器：最大不能超过上个月末 (max_selectable_date)
     safe_start_date = min(account_start_date, max_selectable_date)
-    date_range = c_date.date_input("📅 请选择自定义展示区间", [safe_start_date, max_selectable_date], min_value=safe_start_date, max_value=max_selectable_date)
-    if len(date_range) != 2: st.stop()
+    date_range = c_date.date_input(
+        i18n.t("metrics.custom_range"),
+        [safe_start_date, max_selectable_date],
+        min_value=safe_start_date,
+        max_value=max_selectable_date,
+    )
+    if len(date_range) != 2:
+        st.stop()
     perf_start, perf_end = date_range
 
 # 兜底保险：不管你怎么乱选，结束日期强行被物理截断在最大允许日期以内
@@ -1805,7 +1989,7 @@ if perf_end > max_selectable_date:
 # 4. 提取对应的展示切片
 client_df = admin_df[(admin_df['日期'].dt.date >= perf_start) & (admin_df['日期'].dt.date <= perf_end)].copy()
 if len(client_df) < 2:
-    st.warning("📌 提示：该区间内可用的底层行情数据不足，无法生成有效测算曲线。")
+    st.warning(i18n.t("metrics.no_data"))
     st.stop()
 
 # 5. 核心测算逻辑 (复用顶级测算引擎)
@@ -1830,27 +2014,57 @@ index_change = (c_latest[f'{BENCHMARK_NAME}收盘价'] / prev_index - 1.0) * 100
 alpha = portfolio_change - index_change
 
 # 💡 优化：提取真实的有效数据起止日期（防止开户日晚于自然周期的起点）
-actual_start_str = c_first['日期'].strftime('%Y-%m-%d')
-actual_end_str = c_latest['日期'].strftime('%Y-%m-%d')
+actual_start_str = ui.format_date(c_first['日期'])
+actual_end_str = ui.format_date(c_latest['日期'])
 
 c_info1, c_info2 = st.columns([1, 1])
-c_info1.markdown(f"*(实际有效数据区间：**{actual_start_str}** 至 **{actual_end_str}**)*")
+c_info1.markdown(f"*({i18n.t('metrics.date_range', start=actual_start_str, end=actual_end_str)})*")
 
-# 👇 完美补回被遗漏的“区间净流入”指标！
-c_info2.markdown(f"<div style='text-align: right;'><span style='color:gray;font-size:14px;'>⚖️ 该区间净充值/流入本金: <b>¥{period_net_inflow:,.2f}</b></span></div>", unsafe_allow_html=True)
+as_of_date = pd.Timestamp(c_latest['日期']).date()
+engine_principal = net_principal_on_date(admin_df, as_of_date)
+ledger_net, ledger_in, ledger_out = ledger_net_principal(
+    edited_trades, account_start_date, as_of_date
+)
+if abs(engine_principal - ledger_net) > 0.02:
+    if not is_client_mode:
+        st.warning(i18n.t("metrics.principal_warn", diff=abs(engine_principal - ledger_net), start=account_start_date))
+
+c_info2.markdown(
+    f"<div style='text-align: right;'>"
+    f"<span class='iams-muted-note'>⚖️ {i18n.t('metrics.period_inflow')}: <b>¥{period_net_inflow:,.2f}</b></span>"
+    f"<br><span class='iams-muted-note' style='font-size:12px;'>"
+    f"{i18n.t('metrics.period_inflow_note')}</span></div>",
+    unsafe_allow_html=True,
+)
+st.markdown(
+    f"<div class='iams-muted-note' style='font-size:13px;margin:0.35rem 0 0.5rem 0;'>"
+    f"📌 {i18n.t('metrics.principal_line', date=actual_end_str, principal=engine_principal, inflow=ledger_in, outflow=ledger_out, start=account_start_date)}"
+    f"</div>",
+    unsafe_allow_html=True,
+)
 st.markdown("<br>", unsafe_allow_html=True)
 
 st.markdown('<div id="iams-kpi-start"></div>', unsafe_allow_html=True)
-# 第一行：三个收益率指标
 col1, col2, col3 = st.columns(3)
 col1.metric(
-    "📊 区间回报", f"{portfolio_change:+.2f}%",
-    help="区间回报 = (期末资产 - 期初资产 - 期间净转入) / 成本基数，反映该区间内账户的真实盈亏比例。",
+    i18n.e("kpi.period_return", "📊 "),
+    f"{portfolio_change:+.2f}%",
+    help=i18n.t("kpi.period_return_help"),
 )
-col2.metric("📈 " + BENCHMARK_NAME + " 同期表现", f"{c_latest[f'{BENCHMARK_NAME}收盘价']:,.2f}", f"{index_change:+.2f}% (基准涨跌)", delta_color="inverse", 
-            help="同一时间区间内，" + BENCHMARK_NAME + "指数的累计涨跌幅，作为大盘基准参考。")
-col3.metric("🔥 区间超额收益", f"{alpha:+.2f}%", f"{alpha:+.2f}% (相较大盘)", delta_color="inverse", 
-            help="账户区间回报率减去大盘基准涨跌幅，正数说明跑赢大盘，负数说明跑输大盘。")
+col2.metric(
+    i18n.t("kpi.benchmark", name=BENCHMARK_NAME),
+    f"{c_latest[f'{BENCHMARK_NAME}收盘价']:,.2f}",
+    f"{index_change:+.2f}% ({i18n.t('kpi.benchmark_delta')})",
+    delta_color="inverse",
+    help=i18n.t("kpi.benchmark_help"),
+)
+col3.metric(
+    i18n.e("kpi.alpha", "🔥 "),
+    f"{alpha:+.2f}%",
+    f"{alpha:+.2f}% ({i18n.t('kpi.vs_benchmark')})",
+    delta_color="inverse",
+    help=i18n.t("kpi.alpha_help"),
+)
 
 client_df['历史最高净值'] = client_df['精确组合净值'].cummax()
 client_df['回撤幅度'] = (client_df['精确组合净值'] - client_df['历史最高净值']) / client_df['历史最高净值']
@@ -1869,14 +2083,21 @@ sharpe_ratio = (excess_returns.mean() / daily_volatility) * np.sqrt(252) if dail
 # 第二行：总资产 + 风险指标（与上行列宽对齐）
 col_r1, col_r2, col_r3 = st.columns(3)
 col_r1.metric(
-    "💰 期末真实总资产", f"¥{c_latest['总持仓市值']:,.2f}",
-    help="该区间最后一日的账户总资产估值（现金 + 持仓市值）。",
+    i18n.e("kpi.total_asset", "💰 "),
+    f"¥{c_latest['总持仓市值']:,.2f}",
+    help=i18n.t("kpi.total_asset_help"),
 )
-col_r2.metric("📉 区间最大回撤", f"{max_drawdown:.2f}%", f"{max_drawdown:.2f}% (极值跌幅)", delta_color="inverse", 
-              help="该区间内，账户净值从最高点回落到最低点的最大跌幅，用于衡量面临的极端风险。")
+col_r2.metric(
+    i18n.e("kpi.max_dd", "📉 "),
+    f"{max_drawdown:.2f}%",
+    f"{max_drawdown:.2f}% ({i18n.t('kpi.max_dd_delta')})",
+    delta_color="inverse",
+    help=i18n.t("kpi.max_dd_help"),
+)
 col_r3.metric(
-    "⚖️ 夏普比率 (Sharpe)", f"{sharpe_ratio:.2f}",
-    help="衡量承担每单位风险所获得的超额回报。数值越高，代表经风险调整后的性价比越好（通常 >1 算优秀）。",
+    i18n.e("kpi.sharpe", "⚖️ "),
+    f"{sharpe_ratio:.2f}",
+    help=i18n.t("kpi.sharpe_help"),
 )
 st.markdown('<div id="iams-kpi-end"></div>', unsafe_allow_html=True)
 st.markdown("<br>", unsafe_allow_html=True)
@@ -1896,8 +2117,8 @@ client_df['大盘累计_str'] = client_df['大盘累计收益率'].apply(lambda 
 custom_data_matrix = client_df[['账户当日_str', '账户累计_str', '大盘当日_str', '大盘累计_str']].values
 
 tab1, tab2 = st.tabs([
-    "📈 累计收益率走势图 (区间动态汇报)",
-    "📊 真实资产走势图 (含净本金成本线)",
+    i18n.t("chart.tab_return"),
+    i18n.t("chart.tab_asset"),
 ])
 
 _chart_layout_base = dict(
@@ -1919,14 +2140,14 @@ with tab1:
     fig2 = go.Figure()
     fig2.add_trace(go.Scatter(
         x=client_df['日期'], y=client_df['大盘累计收益率'], customdata=custom_data_matrix,
-        mode='lines', name='上证指数 (大盘基准)',
+        mode='lines', name=i18n.t('chart.benchmark'),
         line=dict(color='#3b82f6', width=2, dash='dot'),
         fill='tozeroy', fillcolor='rgba(59,130,246,0.05)',
         hovertemplate="<b>大盘基准</b><br>单日波动: %{customdata[2]}<br>累计涨幅: %{customdata[3]}<extra></extra>"
     ))
     fig2.add_trace(go.Scatter(
         x=client_df['日期'], y=client_df['账户累计收益率'], customdata=custom_data_matrix,
-        mode='lines', name='本投资组合',
+        mode='lines', name=i18n.t('chart.portfolio'),
         line=dict(color='#ef4444', width=2.5),
         fill='tozeroy', fillcolor='rgba(239,68,68,0.08)',
         hovertemplate="<b>组合回报</b><br>单日波动: %{customdata[0]}<br>累计回报: %{customdata[1]}<extra></extra>"
@@ -1936,7 +2157,7 @@ with tab1:
         x=client_df['日期'],
         y=np.zeros(len(client_df)),
         mode='lines',
-        name='净本金成本线(盈亏平衡 0%)',
+        name=i18n.t('chart.breakeven'),
         line=dict(color='#f59e0b', width=1.5, dash='dash'),
         hoverinfo='skip',
     ))
@@ -1964,14 +2185,14 @@ with tab2:
     fig1 = go.Figure()
     fig1.add_trace(go.Scatter(
         x=client_df['日期'], y=client_df['总持仓市值'],
-        mode='lines', name='客户总资产',
+        mode='lines', name=i18n.t('chart.total_assets'),
         line=dict(color='#ef4444', width=2.5),
         fill='tozeroy', fillcolor='rgba(239,68,68,0.08)',
         hovertemplate="<b>总资产</b>: ¥%{y:,.2f}<extra></extra>"
     ))
     fig1.add_trace(go.Scatter(
         x=client_df['日期'], y=client_df['累计净本金'],
-        mode='lines', name='账户成本(净本金)',
+        mode='lines', name=i18n.t('chart.net_principal'),
         line=dict(color='#f59e0b', width=2, dash='dash'),
         hovertemplate="<b>净本金</b>: ¥%{y:,.2f}<extra></extra>",
     ))
@@ -1986,22 +2207,29 @@ with tab2:
         ),
     )
     st.plotly_chart(fig1, width="stretch")
-    st.caption("橙色虚线 = **净本金**（转入 − 提取现金）。内扣/外付管理费不改变净本金，仅减少总资产中的现金。")
+    st.caption(
+        "橙色虚线 = **累计净本金**（开户日起：转入本金 − 提取现金）。"
+        "与右上角「区间净充值」不同；同一结束日下，月报与自定义应显示相同累计净本金。"
+        "内扣/外付管理费不改变净本金，仅减少现金。"
+    )
 
 # ==========================================
 # 8. 前台展示模块（根据客户当前选择的维度，精准匹配对应月份的寄语）
 # ==========================================
-if "月度报告" in view_mode: current_rep_name = f"{first_day_prev_month.strftime('%Y年%m月')}-月报"
-elif "季度报告" in view_mode: current_rep_name = f"{prev_q_year}年Q{prev_quarter}-季报"
-elif "年度报告" in view_mode: current_rep_name = f"{today.year - 1}年-年报"
-else: current_rep_name = ""
+if view_mode_key == "monthly":
+    current_rep_name = f"{first_day_prev_month.strftime('%Y年%m月')}-月报"
+elif view_mode_key == "quarterly":
+    current_rep_name = f"{prev_q_year}年Q{prev_quarter}-季报"
+elif view_mode_key == "yearly":
+    current_rep_name = f"{today.year - 1}年-年报"
+else:
+    current_rep_name = ""
 
-# 💡 核心修复：把 current_rep_name 作为第 3 个参数传进去！自定义区间则不展示任何固定寄语。
 client_commentary = db.get_commentary(current_user, active_acc, current_rep_name) if current_rep_name else ""
 
 if client_commentary and client_commentary.strip() != "":
     st.markdown("<hr style='margin-top: 40px; margin-bottom: 20px;'>", unsafe_allow_html=True)
-    st.subheader(f"💡 投顾分析与决策展望 ({current_rep_name})")
+    st.subheader(i18n.t("commentary.title", period=current_rep_name))
     with st.container(border=True):
         # 👇 核心修复：增加 unsafe_allow_html=True，让富文本的排版生效
         st.markdown(client_commentary, unsafe_allow_html=True)
