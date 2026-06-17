@@ -19,7 +19,7 @@ DIVIDEND_DIR = "dividend_data"
 ACCOUNT_CONFIG_FILE = "account_config.json"
 BENCHMARK_NAME = "上证指数"
 SNAPSHOT_CACHE_DIR = Path(".cache/hall_snapshots")
-ENGINE_VERSION = "1.4"
+ENGINE_VERSION = "1.4.0"
 
 
 @dataclass(frozen=True)
