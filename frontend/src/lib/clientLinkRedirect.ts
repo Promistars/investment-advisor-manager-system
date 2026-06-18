@@ -1,4 +1,4 @@
-/** 旧版客户链接 ?user=&acc= 重定向到 /client/{user}/{account} */
+/** 查询参数 ?user=&acc= 形式客户链接 → /client/{user}/{account} */
 export function clientLinkFromQuery(params: URLSearchParams): string | null {
   const user = params.get('user')
   const acc = params.get('acc')

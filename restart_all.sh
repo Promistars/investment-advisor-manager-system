@@ -32,7 +32,7 @@ sleep 1
 echo "🚀 正在重新拉起核心业务线 (nohup 模式)..."
 echo "  💡 建议执行: bash $ROOT/setup_systemd.sh"
 
-bash "$ROOT/restart_web2.sh"
+bash "$ROOT/restart_web.sh"
 
 echo "=================================================="
 echo " 🎉 一键重启大功告成！"

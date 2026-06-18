@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+pages/
 
 # 💡 忽略所有本地生成的财务数据和缓存（千万别传这些！）
 financial_data/
@@ -54,7 +55,5 @@ frontend/dist/
 web_log.txt
 web_build_log.txt
 fetch_log.txt
-streamlit_temp_log.txt
 iams_healthcheck.log
 
-test_app.py

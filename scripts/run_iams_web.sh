@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Foreground IAMS v2 (FastAPI + built React SPA) — for systemd Type=simple
+# Foreground IAMS web (FastAPI + built React SPA) — for systemd Type=simple
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

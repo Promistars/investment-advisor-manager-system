@@ -1,6 +1,6 @@
 # 🌌 Nova Quant | 智能投顾与全周期资产管理中枢
 
-![Version](https://img.shields.io/badge/Version-2.1.2-blue)
+![Version](https://img.shields.io/badge/Version-2.1.3-blue)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
@@ -35,10 +35,10 @@ conda activate IAMS
 cd frontend && npm install && cd ..
 
 cp .env.example .env               # 生产环境请修改 SECRET_KEY
-bash restart_web2.sh                 # 默认 http://127.0.0.1:29996/IAMS/
+bash restart_web.sh                 # 默认 http://127.0.0.1:29996/IAMS/
 ```
 
-开发模式（API :8000 + Vite :5173）：`bash start_web2.sh`
+开发模式（API :8000 + Vite :5173）：`bash start_dev.sh`
 
 ### 2. 数据抓取
 
@@ -68,7 +68,7 @@ bash restart_all.sh      # 日常重启
 ├── auto_fetch.py           # 定时增量抓取
 ├── stock_fetch.py          # 新浪/东财/BaoStock K 线
 ├── db_manager.py           # SQLite 用户与交易
-├── restart_web2.sh         # 生产启动
+├── restart_web.sh          # 生产启动
 ├── config/network.env      # 项目代理策略（默认直连）
 ├── systemd/                # systemd 单元模板
 ├── financial_data/         # [本地] 个股 K 线
@@ -85,7 +85,7 @@ bash restart_all.sh      # 日常重启
 
 ## 📜 版本
 
-当前 **2.1.2** — 详见 [CHANGELOG.md](CHANGELOG.md)。
+当前 **2.1.3** — 详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

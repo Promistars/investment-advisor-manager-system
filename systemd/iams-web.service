@@ -1,12 +1,12 @@
 [Unit]
-Description=IAMS v2 Web (FastAPI + React, port 29996)
+Description=IAMS Web (FastAPI + React, port 29996)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
 WorkingDirectory=@IAMS_ROOT@
-ExecStart=@IAMS_ROOT@/scripts/run_with_iams_env.sh @IAMS_ROOT@/scripts/run_iams_web2.sh
+ExecStart=@IAMS_ROOT@/scripts/run_with_iams_env.sh @IAMS_ROOT@/scripts/run_iams_web.sh
 EnvironmentFile=-@IAMS_ROOT@/config/network.env
 Restart=no
 StandardOutput=append:@IAMS_ROOT@/web_log.txt

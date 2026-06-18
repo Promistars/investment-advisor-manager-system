@@ -19,7 +19,7 @@ if [ "$(loginctl show-user "$(whoami)" -p Linger --value 2>/dev/null)" != "yes" 
 fi
 
 mkdir -p "$USER_SYSTEMD"
-chmod +x "$ROOT/iams_healthcheck.sh" "$ROOT/scripts/run_iams_web2.sh" "$ROOT/scripts/run_with_iams_env.sh"
+chmod +x "$ROOT/iams_healthcheck.sh" "$ROOT/scripts/run_iams_web.sh" "$ROOT/scripts/run_with_iams_env.sh"
 
 install_unit() {
     local src="$1"

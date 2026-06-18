@@ -9,7 +9,7 @@ CONDA_NODE="${CONDA_NODE:-}"
 PORT="${IAMS_PORT:-29996}"
 
 echo "=================================================="
-echo " 🚀 IAMS v2 — FastAPI + React (port $PORT)"
+echo " 🚀 IAMS — FastAPI + React (port $PORT)"
 echo "=================================================="
 
 ps -ef | grep "[u]vicorn app.main:app" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true

@@ -1,26 +1,28 @@
 # Changelog
 
+## [2.1.3] — 2026-06-04
+
+### 命名与文档
+
+- 部署脚本重命名：`restart_web.sh`、`start_dev.sh`、`scripts/run_iams_web.sh`
+- 文档与 CHANGELOG 去除旧版 UI 栈相关表述
+- 删除本地 `pages/` 空目录残留
+
+---
+
 ## [2.1.2] — 2026-06-04
 
-### 仓库精简
-
-- 合并 `backend/requirements.txt` → 根目录 `requirements.txt`
-- 移除 CHANGELOG 中 v1.x 历史（GitHub 仅保留 v2 当前线）
-- 清理 Streamlit / v1 相关 i18n 与客户链接文案
-- `legacyClientUrl` 重命名为 `clientLinkRedirect`（仅保留旧书签重定向）
-- 移除 `main.py` 中非核心的 palette-studio 挂载
+- 合并 Python 依赖至根目录 `requirements.txt`
+- 清理废弃 i18n 与客户链接文案；`clientLinkRedirect` 保留查询参数书签重定向
+- CHANGELOG 仅保留当前产品线历史
 
 ---
 
 ## [2.1.1] — 2026-06-04
 
-### 清理与精简
-
-- 移除 Streamlit 1.x 遗留代码（`app.py`、`pages/`、`iams_*` 模块及对照部署脚本）
-- 移除未使用的 `backend/app/schemas.py`、Vite 脚手架资源
-- `requirements.txt` 仅保留领域层与 API 依赖
+- 移除废弃 Python 单页 UI 代码与对照部署脚本
+- 移除未使用 schema 与 Vite 脚手架资源
 - 统一 conda 环境 `IAMS`（Python + Node）
-- 绩效引擎缓存版本号升至 2.1.1
 
 ---
 
