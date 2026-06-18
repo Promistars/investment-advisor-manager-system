@@ -5,7 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext'
 import { AppShell, ClientShell } from './components/Layout'
 import { LoginPage } from './pages/LoginPage'
 import { HallPage } from './pages/HallPage'
-import { legacyClientPath } from './lib/legacyClientUrl'
+import { clientLinkFromQuery } from './lib/clientLinkRedirect'
 import { t } from './lib/i18n'
 import { SettingsPage } from './pages/SettingsPage'
 
@@ -24,10 +24,10 @@ function Protected({ children }: { children: React.ReactNode }) {
   const { user, loading, prefs } = useAuth()
   const location = useLocation()
   const [params] = useSearchParams()
-  const legacyTarget = legacyClientPath(params)
+  const redirectTarget = clientLinkFromQuery(params)
 
-  if (legacyTarget && location.pathname === '/') {
-    return <Navigate to={legacyTarget} replace />
+  if (redirectTarget && location.pathname === '/') {
+    return <Navigate to={redirectTarget} replace />
   }
 
   if (loading) {
@@ -47,7 +47,7 @@ function HallEntry() {
 
 function LoginEntry() {
   const [params] = useSearchParams()
-  const target = legacyClientPath(params)
+  const target = clientLinkFromQuery(params)
   if (target) return <Navigate to={target} replace />
   return <LoginPage />
 }

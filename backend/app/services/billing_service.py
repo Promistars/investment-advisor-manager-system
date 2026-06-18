@@ -1,4 +1,4 @@
-"""High-water mark billing engine (ported from Streamlit analytics.py)."""
+"""High-water mark billing engine."""
 from __future__ import annotations
 
 import sys

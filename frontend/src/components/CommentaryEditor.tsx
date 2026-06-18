@@ -129,10 +129,10 @@ export function SharePanel({ clientUrl, lang = 'zh' }: { clientUrl: string; lang
       <h3 className="font-semibold">{t('share.client_links', lang)}</h3>
       <p className="text-xs text-stone-500">{t('share.hint_client', lang)}</p>
       <div>
-        <div className="text-xs text-stone-500 mb-1">{t('share.v2', lang)}</div>
+        <div className="text-xs text-stone-500 mb-1">{t('share.link', lang)}</div>
         <code className="block text-xs bg-stone-50 p-2 rounded-lg break-all">{clientUrl}</code>
         <button type="button" className="btn-secondary mt-2 text-xs" onClick={() => copy(clientUrl)}>
-          {copied ? t('share.copied', lang) : t('share.copy_v2', lang)}
+          {copied ? t('share.copied', lang) : t('share.copy', lang)}
         </button>
       </div>
     </div>

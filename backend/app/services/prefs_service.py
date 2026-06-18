@@ -139,7 +139,7 @@ def merge_on_login(username: str) -> dict[str, Any]:
 
 
 def migrate_stored_prefs_file() -> None:
-    """Rewrite legacy Streamlit values (Chinese, CN red up, etc.) on disk."""
+    """Rewrite legacy preference values (Chinese labels, CN red up, etc.) on disk."""
     data = _load_all()
     if not data:
         return

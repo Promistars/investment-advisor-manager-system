@@ -1,6 +1,6 @@
 # 🌌 Nova Quant | 智能投顾与全周期资产管理中枢
 
-![Version](https://img.shields.io/badge/Version-2.1.1-blue)
+![Version](https://img.shields.io/badge/Version-2.1.2-blue)
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?logo=python)
 ![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi)
 ![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
@@ -85,7 +85,7 @@ bash restart_all.sh      # 日常重启
 
 ## 📜 版本
 
-当前 **2.1.1** — 详见 [CHANGELOG.md](CHANGELOG.md)。
+当前 **2.1.2** — 详见 [CHANGELOG.md](CHANGELOG.md)。
 
 ---
 

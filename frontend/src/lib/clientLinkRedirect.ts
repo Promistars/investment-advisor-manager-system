@@ -1,5 +1,5 @@
-/** Streamlit 1.4 客户链接: /?user=xxx&acc=yyy&view=month&lang=zh */
-export function legacyClientPath(params: URLSearchParams): string | null {
+/** 旧版客户链接 ?user=&acc= 重定向到 /client/{user}/{account} */
+export function clientLinkFromQuery(params: URLSearchParams): string | null {
   const user = params.get('user')
   const acc = params.get('acc')
   if (!user || !acc) return null

@@ -40,7 +40,6 @@ Thumbs.db
 .env
 config/local.env
 secrets.toml
-.streamlit/secrets.toml
 
 # 📦 虚拟环境 / Node
 venv/

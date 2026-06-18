@@ -12,7 +12,7 @@ PORT="${IAMS_PORT:-29996}"
 export IAMS_ROOT="$ROOT"
 export PATH="${NODE:+$NODE:}$PATH"
 
-cd "$ROOT/backend"
+cd "$ROOT"
 "$PYTHON" -m pip install -q -r requirements.txt
 
 cd "$ROOT/frontend"

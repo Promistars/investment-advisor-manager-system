@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# IAMS v2 — single-port FastAPI + React (replaces Streamlit on 29996)
+# IAMS — single-port FastAPI + React (port 29996)
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
@@ -16,7 +16,7 @@ ps -ef | grep "[u]vicorn app.main:app" | awk '{print $2}' | xargs -r kill -9 2>/
 ps -ef | grep "[v]ite preview" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 sleep 1
 
-cd "$ROOT/backend"
+cd "$ROOT"
 "$CONDA_PYTHON" -m pip install -q -r requirements.txt
 
 export PATH="${CONDA_NODE:+$CONDA_NODE:}$PATH"

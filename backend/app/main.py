@@ -1,4 +1,3 @@
-import os
 import sys
 from pathlib import Path
 
@@ -57,32 +56,23 @@ def root_redirect():
 
 
 @app.get("/assets/{asset_path:path}")
-def legacy_assets(asset_path: str):
+def redirect_assets(asset_path: str):
     return RedirectResponse(url=f"{MOUNT}/assets/{asset_path}", status_code=301)
 
 
 @app.get("/login")
-def legacy_login():
+def redirect_login():
     return RedirectResponse(url=f"{MOUNT}/login", status_code=302)
 
 
 @app.get("/account/{rest:path}")
-def legacy_account(rest: str):
+def redirect_account(rest: str):
     return RedirectResponse(url=f"{MOUNT}/account/{rest}", status_code=302)
 
 
 @app.get("/client/{rest:path}")
-def legacy_client(rest: str):
+def redirect_client(rest: str):
     return RedirectResponse(url=f"{MOUNT}/client/{rest}", status_code=302)
-
-
-_palette_root = Path(os.environ.get("PALETTE_STUDIO_ROOT", "")).expanduser()
-if _palette_root.is_dir():
-    app.mount(
-        "/palette",
-        StaticFiles(directory=str(_palette_root), html=True),
-        name="palette-studio",
-    )
 
 
 _dist = ROOT / "frontend" / "dist"

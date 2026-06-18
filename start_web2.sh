@@ -10,7 +10,6 @@ CONDA_NODE="${CONDA_NODE:-}"
 cd "$ROOT"
 
 echo "Starting IAMS API on :8000 ..."
-cd backend
 "$CONDA_PYTHON" -m pip install -q -r requirements.txt 2>/dev/null || true
 cd "$ROOT"
 IAMS_ROOT="$ROOT" "$CONDA_PYTHON" -m uvicorn app.main:app --app-dir backend --host 0.0.0.0 --port 8000 --reload &

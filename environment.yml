@@ -1,4 +1,4 @@
-# IAMS 统一 conda 环境：Python 后端 + Node 前端构建 + Streamlit 遗留入口
+# IAMS 统一 conda 环境：Python 后端 + Node 前端构建
 # 创建：conda env create -f environment.yml
 # 更新：conda env update -f environment.yml --prune
 name: IAMS
@@ -10,4 +10,3 @@ dependencies:
   - pip
   - pip:
       - -r requirements.txt
-      - -r backend/requirements.txt

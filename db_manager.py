@@ -155,7 +155,7 @@ def get_all_trades_for_user(username):
     return result
 
 def save_trades(username, account_name, df):
-    """覆盖保存指定账户的流水表（适配 Streamlit 的 data_editor）"""
+    """覆盖保存指定账户的流水表。"""
     acc_id = get_account_id(username, account_name)
     if not acc_id: return
     try:
