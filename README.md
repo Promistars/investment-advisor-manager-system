@@ -24,33 +24,47 @@
 
 ## 🚀 快速开始（v2 推荐）
 
-### 环境
+### 1. 创建统一 conda 环境（推荐）
 
-- Python 3.9+
-- Node.js 18+（构建前端）
+本项目使用 **单个 conda 环境** 隔离 Python 后端、Node 前端构建与 Streamlit 遗留入口。
+
+前置：已安装 [Miniconda](https://docs.conda.io/en/latest/miniconda.html) 或 Anaconda。
 
 ```bash
 git clone https://github.com/Promistars/investment-advisor-manager-system.git
 cd investment-advisor-manager-system
 
-# Python 依赖（领域层 + Streamlit 遗留 + API）
-pip install -r requirements.txt
-pip install -r backend/requirements.txt
+# 创建/更新环境 IAMS（含 Python 3.10+、Node 20+、全部 pip 依赖）
+bash scripts/setup_conda_env.sh
 
-# 可选：复制并编辑环境变量（生产环境务必修改 SECRET_KEY）
+conda activate IAMS
+cd frontend && npm install && cd ..
+
+# 可选：生产密钥
 cp .env.example .env
 
-# 前端构建与单端口启动（默认 29996，挂载 /IAMS/）
-cd frontend && npm install && cd ..
+# 构建前端并单端口启动（默认 29996，挂载 /IAMS/）
 bash restart_web2.sh
 ```
 
 浏览器访问：`http://127.0.0.1:29996/IAMS/`
 
+> 部署脚本会自动在 `conda env list` 中查找名为 **IAMS** 的环境；若 conda 安装路径非常规，可复制 `config/local.env.example` → `config/local.env` 并设置 `CONDA_BASE`。
+
 开发模式（API :8000 + Vite :5173）：
 
 ```bash
+conda activate IAMS
 bash start_web2.sh
+```
+
+### 2. 不用 conda 时（备选）
+
+```bash
+pip install -r requirements.txt
+pip install -r backend/requirements.txt
+cd frontend && npm install && cd ..
+bash restart_web2.sh
 ```
 
 ### 数据抓取
@@ -76,6 +90,8 @@ bash restart_all.sh
 ## 📂 目录结构
 
 ```text
+├── environment.yml         # 统一 conda 环境定义（Python + Node + pip）
+├── scripts/setup_conda_env.sh
 ├── backend/                # FastAPI REST API
 ├── frontend/               # React + Vite + TypeScript + Tailwind + ECharts
 ├── app.py                  # Streamlit 遗留入口（可选对照）
@@ -87,6 +103,7 @@ bash restart_all.sh
 ├── restart_web2.sh         # v2 生产启动（推荐）
 ├── start_web2.sh           # v2 开发启动
 ├── config/network.env      # 项目代理策略（默认直连）
+├── config/local.env.example # 本机 conda 路径可选覆盖
 ├── systemd/                # systemd 单元模板（@IAMS_ROOT@ 占位符）
 ├── financial_data/         # [本地生成，不入库] 个股 K 线
 ├── dividend_data/          # [本地生成，不入库] 分红事件

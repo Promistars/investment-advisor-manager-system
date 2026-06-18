@@ -2,6 +2,8 @@
 # 临时启动 Streamlit 1.x 对照版（与 v2 并行，默认端口 29998）
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/load_local_env.sh"
 CONDA_STREAMLIT="${CONDA_STREAMLIT:-streamlit}"
 PORT="${STREAMLIT_PORT:-29998}"
 HOST="${STREAMLIT_HOST:-127.0.0.1}"

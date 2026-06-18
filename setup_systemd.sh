@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/load_local_env.sh"
 USER_SYSTEMD="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
 PYTHON="${CONDA_PYTHON:-python3}"
 PORT="${IAMS_PORT:-29996}"

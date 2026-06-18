@@ -1,0 +1,13 @@
+# IAMS 统一 conda 环境：Python 后端 + Node 前端构建 + Streamlit 遗留入口
+# 创建：conda env create -f environment.yml
+# 更新：conda env update -f environment.yml --prune
+name: IAMS
+channels:
+  - conda-forge
+dependencies:
+  - python>=3.10,<3.13
+  - nodejs>=20,<23
+  - pip
+  - pip:
+      - -r requirements.txt
+      - -r backend/requirements.txt

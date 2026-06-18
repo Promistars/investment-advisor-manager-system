@@ -9,6 +9,7 @@
 - Analytics 页吸顶标题无缝隙
 - 账户大厅累计管理费与分账户明细
 - 修复 `list_accounts` 因 DataFrame 类型导致的 500 错误
+- 新增 `environment.yml`：单一 conda 环境（Python + Node），`scripts/setup_conda_env.sh` 一键创建
 
 ---
 

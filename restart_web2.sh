@@ -2,6 +2,8 @@
 # IAMS v2 — single-port FastAPI + React (replaces Streamlit on 29996)
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/load_local_env.sh"
 CONDA_PYTHON="${CONDA_PYTHON:-python3}"
 CONDA_NODE="${CONDA_NODE:-}"
 PORT="${IAMS_PORT:-29996}"

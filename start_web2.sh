@@ -2,6 +2,8 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "$ROOT/scripts/load_local_env.sh"
 CONDA_PYTHON="${CONDA_PYTHON:-python3}"
 CONDA_NODE="${CONDA_NODE:-}"
 

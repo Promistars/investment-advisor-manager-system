@@ -38,6 +38,7 @@ Thumbs.db
 
 # 🛑 环境变量与机密配置 (防止 API Key 或密码泄露)
 .env
+config/local.env
 secrets.toml
 .streamlit/secrets.toml
 
