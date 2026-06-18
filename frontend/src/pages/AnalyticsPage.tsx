@@ -70,14 +70,6 @@ export function AnalyticsPage() {
     return appUrl(`/client/${encodeURIComponent(user)}/${encodeURIComponent(account)}?${q}`)
   }, [user, account, prefs.lang, defaultView])
 
-  const legacyClientUrl = useMemo(() => {
-    if (!user) return ''
-    const viewMap: Record<string, string> = { monthly: 'month', quarterly: 'quarter', yearly: 'year' }
-    return appUrl(
-      `/?user=${encodeURIComponent(user)}&acc=${encodeURIComponent(account)}&lang=${prefs.lang}&view=${viewMap[defaultView] || 'month'}`,
-    )
-  }, [user, account, prefs.lang, defaultView])
-
   if (isLoading) return <p className="text-stone-500">{t('common.loading', lang)}</p>
 
   if (error || !data?.admin) {
@@ -151,7 +143,7 @@ export function AnalyticsPage() {
         )}
 
         <div className="space-y-6 min-w-0">
-          <SharePanel clientUrl={clientUrl} legacyUrl={legacyClientUrl} lang={lang} />
+          <SharePanel clientUrl={clientUrl} lang={lang} />
 
           <div className="card p-4 border-brand-100">
             <h3 className="font-bold text-brand-700 mb-1">{e('analytics.client_preview_title', lang, '📈', prefs.show_emoji)}</h3>

@@ -1,5 +1,17 @@
 # Changelog
 
+## [2.1.1] — 2026-06-04
+
+### 清理与精简
+
+- 移除 Streamlit 1.x 遗留代码（`app.py`、`pages/`、`iams_*` 模块及对照部署脚本）
+- 移除未使用的 `backend/app/schemas.py`、Vite 脚手架资源
+- `requirements.txt` 仅保留领域层依赖（去掉 streamlit / plotly）
+- 统一 conda 环境 `IAMS`（Python + Node）；客户链接面板移除 Streamlit 兼容项
+- 绩效引擎缓存版本号升至 2.1.1
+
+---
+
 ## [2.1.0] — 2026-06-04
 
 ### v2 体验与对齐

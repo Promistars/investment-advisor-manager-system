@@ -1,24 +1,8 @@
-# --- Web 框架与前端 UI ---
-streamlit
-streamlit-quill
-
-# --- 数据处理与计算 ---
+# 领域层与数据引擎（FastAPI 依赖见 backend/requirements.txt）
 pandas
 numpy
-
-# --- 交互式图表 ---
-plotly
-
-# --- 金融数据接口 ---
 akshare
 baostock
-
-# --- 数据解析依赖 ---
 openpyxl
 lxml
-
-# --- 后台定时任务调度 ---
 apscheduler
-
-# --- “桥梁”插件，实现 Streamlit 与 JavaScript 的无缝对话 ---
-streamlit-javascript

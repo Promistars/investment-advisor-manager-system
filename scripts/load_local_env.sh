@@ -57,13 +57,7 @@ if [ -z "${CONDA_NODE:-}" ]; then
   fi
 fi
 
-if [ -z "${CONDA_STREAMLIT:-}" ] && [ -n "$_env_bin" ] && [ -x "$_env_bin/streamlit" ]; then
-  CONDA_STREAMLIT="$_env_bin/streamlit"
-  export CONDA_STREAMLIT
-fi
-
 export CONDA_PYTHON="${CONDA_PYTHON:-python3}"
-export CONDA_STREAMLIT="${CONDA_STREAMLIT:-streamlit}"
 if [ -n "${CONDA_NODE:-}" ]; then
   export CONDA_NODE
 fi

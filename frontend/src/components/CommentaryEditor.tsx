@@ -117,12 +117,12 @@ export function CommentaryEditor({
   )
 }
 
-export function SharePanel({ clientUrl, legacyUrl, lang = 'zh' }: { clientUrl: string; legacyUrl?: string; lang?: Lang }) {
-  const [copied, setCopied] = useState<'new' | 'legacy' | null>(null)
-  const copy = (url: string, kind: 'new' | 'legacy') => {
+export function SharePanel({ clientUrl, lang = 'zh' }: { clientUrl: string; lang?: Lang }) {
+  const [copied, setCopied] = useState(false)
+  const copy = (url: string) => {
     navigator.clipboard.writeText(url)
-    setCopied(kind)
-    setTimeout(() => setCopied(null), 2000)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
   return (
     <div className="card p-4 space-y-3">
@@ -131,19 +131,10 @@ export function SharePanel({ clientUrl, legacyUrl, lang = 'zh' }: { clientUrl: s
       <div>
         <div className="text-xs text-stone-500 mb-1">{t('share.v2', lang)}</div>
         <code className="block text-xs bg-stone-50 p-2 rounded-lg break-all">{clientUrl}</code>
-        <button type="button" className="btn-secondary mt-2 text-xs" onClick={() => copy(clientUrl, 'new')}>
-          {copied === 'new' ? t('share.copied', lang) : t('share.copy_v2', lang)}
+        <button type="button" className="btn-secondary mt-2 text-xs" onClick={() => copy(clientUrl)}>
+          {copied ? t('share.copied', lang) : t('share.copy_v2', lang)}
         </button>
       </div>
-      {legacyUrl && (
-        <div>
-          <div className="text-xs text-stone-500 mb-1">{t('share.legacy', lang)}</div>
-          <code className="block text-xs bg-stone-50 p-2 rounded-lg break-all">{legacyUrl}</code>
-          <button type="button" className="btn-secondary mt-2 text-xs" onClick={() => copy(legacyUrl, 'legacy')}>
-            {copied === 'legacy' ? t('share.copied', lang) : t('share.copy_legacy', lang)}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

@@ -12,7 +12,6 @@ echo "=================================================="
 echo " 🚀 IAMS v2 — FastAPI + React (port $PORT)"
 echo "=================================================="
 
-ps -ef | grep "[s]treamlit run app.py" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 ps -ef | grep "[u]vicorn app.main:app" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 ps -ef | grep "[v]ite preview" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 sleep 1
