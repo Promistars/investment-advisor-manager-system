@@ -4,4 +4,4 @@ After=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=/home/muchenzhang/fnc/IAMS_1.2/iams_healthcheck.sh
+ExecStart=@IAMS_ROOT@/iams_healthcheck.sh

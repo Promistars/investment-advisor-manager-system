@@ -1,5 +1,34 @@
 # Changelog
 
+## [2.1.0] — 2026-06-04
+
+### v2 体验与对齐
+
+- 交易录入「标的」可检索下拉（全量列表 + 文字过滤）
+- 侧边栏股票抓取成功/失败/已存在交互反馈
+- Analytics 页吸顶标题无缝隙
+- 账户大厅累计管理费与分账户明细
+- 修复 `list_accounts` 因 DataFrame 类型导致的 500 错误
+
+---
+
+## [2.0.0] — 2026-06-04
+
+### 架构升级（Streamlit → FastAPI + React）
+
+- **后端** `backend/`：FastAPI REST API，复用 `portfolio_engine`、`db_manager` 等领域层
+- **前端** `frontend/`：React + Vite + TypeScript + Tailwind + ECharts 产品级 UI
+- 单端口部署：API 与 SPA 同服于 **29996**（`bash restart_web2.sh`）
+- 客户只读链接：`/client/{user}/{account}?lang=en`
+
+### 功能
+
+- 登录 / 注册 / 账户大厅 / 绩效看板 / 交易流水编辑
+- 六宫格 KPI、收益率与资产双图、投顾寄语展示
+- **v2.1 功能对齐 Streamlit**：交易录入台、持仓结构、操作全景图、高水位管理费结算、雷达监控、全量对账单、Quill 寄语编辑、客户链接、自定义区间
+
+---
+
 ## [1.4.0] — 2026-06-17
 
 ### 绩效引擎与数据一致性

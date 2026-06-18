@@ -1746,7 +1746,7 @@ if not is_client_mode:
         
         # ⚠️ 容错保护：因为 JS 和 Python 之间有微小的延迟，刚刷新时可能返回 0 或 None
         if not current_origin or current_origin == 0:
-            current_origin = "http://112.49.20.151:29996"  # 填入你现在的 IP 作为临时兜底
+            current_origin = "http://127.0.0.1:29996"
             
         # 完美的动态 URL 拼接
         BASE_URL = f"{current_origin}/analytics"

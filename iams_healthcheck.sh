@@ -1,9 +1,10 @@
 #!/bin/bash
 # 探活：Web 无响应或 fetch 进程不在时，通过 systemd 拉起（最多约 1h 恢复一次检查）
 
-WORKDIR=/home/muchenzhang/fnc/IAMS_1.2
-LOG="$WORKDIR/iams_healthcheck.log"
-WEB_URL="http://127.0.0.1:29996/"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+LOG="$ROOT/iams_healthcheck.log"
+PORT="${IAMS_PORT:-29996}"
+WEB_URL="http://127.0.0.1:${PORT}/IAMS/api/health"
 WEB_TIMEOUT=8
 
 log() {

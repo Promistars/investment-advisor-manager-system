@@ -5,12 +5,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-WorkingDirectory=/home/muchenzhang/fnc/IAMS_1.2
-ExecStart=/home/muchenzhang/fnc/IAMS_1.2/scripts/run_with_iams_env.sh /home/muchenzhang/miniconda3/envs/IAMS/bin/python /home/muchenzhang/fnc/IAMS_1.2/auto_fetch.py
-EnvironmentFile=-/home/muchenzhang/fnc/IAMS_1.2/config/network.env
+WorkingDirectory=@IAMS_ROOT@
+ExecStart=@IAMS_ROOT@/scripts/run_with_iams_env.sh @PYTHON@ @IAMS_ROOT@/auto_fetch.py
+EnvironmentFile=-@IAMS_ROOT@/config/network.env
 Restart=no
-StandardOutput=append:/home/muchenzhang/fnc/IAMS_1.2/fetch_log.txt
-StandardError=append:/home/muchenzhang/fnc/IAMS_1.2/fetch_log.txt
+StandardOutput=append:@IAMS_ROOT@/fetch_log.txt
+StandardError=append:@IAMS_ROOT@/fetch_log.txt
 
 [Install]
 WantedBy=default.target

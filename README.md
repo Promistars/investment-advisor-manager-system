@@ -1,145 +1,125 @@
 # 🌌 Nova Quant | 智能投顾与全周期资产管理中枢
 
-![Version](https://img.shields.io/badge/Version-1.4.0-blue)
+![Version](https://img.shields.io/badge/Version-2.1.0-blue)
 ![Python](https://img.shields.io/badge/Python-3.9%2B-blue?logo=python)
-![Streamlit](https://img.shields.io/badge/Streamlit-Framework-FF4B4B?logo=streamlit)
-![Pandas](https://img.shields.io/badge/Pandas-Data_Processing-150458?logo=pandas)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi)
+![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react)
 ![License](https://img.shields.io/badge/License-MIT-green)
 
 > **"让代码处理繁琐，让大脑专注决策。"**
-> 本项目是一个基于 Python 和 Streamlit 开发的**生产级私募/专户投资管理控制台**。系统专为基金经理和投顾设计，内置业绩报酬核算引擎，能够实现毫秒级的精准记账，融合自动化除权息处理、双口径价格引擎与客户视角的丝滑大屏展示，以及极其严密的"管理端/客户端"双视角物理隔离架构。
+> 本项目是一个基于 Python 的**生产级私募/专户投资管理控制台**。v2 采用 **FastAPI + React** 产品级架构（单端口部署），并保留 Streamlit 1.x 遗留入口便于对照。系统内置业绩报酬核算引擎，融合自动化除权息处理、双口径价格引擎与客户视角大屏展示，以及严密的「管理端/客户端」双视角物理隔离。
 
 ---
 
-## ✨ 核心硬核特性 (Core Features)
+## ✨ 核心特性
 
-### 1. 🌊 智能高水位线业绩报酬引擎 (High-Water Mark Engine)
-* **动态基数计算**：完美处理客户中途转入、提出资金的场景，严格按照真实净流入调整结算基数。
-* **双轨制目标设定**：支持"按约定收益率(%)"或"手动指定目标总资产(¥)"双重模式，系统自动反推计算。
-* **溢出利润无损截断**：当利润超过约定目标时，系统按目标比例精准扣费，并将超额利润无缝结转为下一期的起步本金。
-
-### 2. 🛡️ 前后台物理隔离架构 (B/S Isolation)
-- **👨‍💻 投顾/管理员模式**：拥有全量底牌视野。支持录入交易流水、动态添加追踪标的、查阅个股持仓数量与浮动盈亏，并内置流式富文本编辑器（Quill）撰写投顾报告。
-- **🌐 客户/展示大屏模式**：通过加密专属 URL (`?user=xxx&acc=xxx`) 隐身降权访问。物理屏蔽具体持仓明细与操作面板，仅展示大类资产走势、超额收益（Alpha）、夏普比率及最大回撤等专业绩效指标。
-
-### 3. 🧮 "时空平滑"双擎价格基准 (Dual-Engine Pricing)
-彻底解决 A 股除权除息导致的"净值断层"痛点：
-- **图表展示轴（前复权）**：自动抓取并对齐前复权数据，确保资金净值曲线如丝般顺滑，真实反映复合收益。
-- **交易结算轴（不复权）**：智能剥离复权失真，录入台严格调用真实历史收盘价，确保结算总额与券商 APP 账单 100% 严丝合缝。
-
-### 4. 💰 全自动法币分红派息引擎 (Auto-Dividend System)
-告别手动查阅财报！系统内置深度爬虫，每日自动校验持仓标的的分红日历。一旦跨越除权除息日：
-- **现金分红**：自动折算并"叮"声入账，充实账户可用现金储备。
-- **送股/转增**：精准计算零碎股，自动增加底层持仓数量，全程零人工干预。
-
-### 5. 🔄 三级容灾数据引擎 (Triple-Source Resilience)
-- **新浪日线（优先）**：个股 K 线在多数服务器环境下最稳定，新股票侧边栏录入即时走同一引擎。
-- **东财 / BaoStock（备用）**：东财 K 线可达时自动补齐；否则回退 BaoStock，并与 AKShare 分红等接口协同。
-- **项目级网络策略**：`config/network.env` + `iams_network.py` 仅作用于本项目，避免全局代理导致东财/新浪异常。
-- **增量追加模式**：每次仅拉取缺失日期的新数据，节省带宽，兼顾数据完整性。
-
-### 6. ⚡ UI/UX 黑科技与极致交互 (Extreme UX)
-- **跨层穿透吸顶**：采用 JS 注入突破框架底层 DOM 限制，实现管理员控制台与客户大屏的"物理阻尼感"滚动吸顶特效。
-- **智能交易录入台**：内置记忆逻辑（自动保留上次操作类型）、标的动态排序（最近操作过的资产自动置顶），支持交易日历智能屏蔽，大幅提升高频录入效率。
-- **零延迟研报直出**：自定义 CSS 魔法翻译器，支持在原生编辑器中一键注入特定中英文字体与超链接。
-- **六格绩效仪表盘**：上行（区间回报 / 大盘同期 / 超额收益）+ 下行（期末总资产 / 最大回撤 / 夏普比率）两行对称布局，一屏掌握全维度绩效。
-- **移动端全适配**：响应式 CSS 自动压缩留白、降级字号、隐藏图表工具栏，手机竖屏可流畅阅览。
+- **高水位线业绩报酬引擎**：动态基数、双轨目标、溢出利润截断
+- **前后台物理隔离**：投顾全量控制台 vs 客户只读大屏（`/client/{user}/{acc}`）
+- **双擎价格基准**：图表前复权 + 交易结算不复权
+- **全自动分红派息**：除权除息日自动入账/送股
+- **三级容灾数据引擎**：新浪 → 东财 → BaoStock，项目级 `config/network.env` 网络策略
+- **v2 产品 UI**：六宫格 KPI、ECharts 双图、交易录入台、持仓结构、操作全景图、雷达监控、Quill 寄语、流水编辑与中英双语
 
 ---
 
-## 🏗️ 系统架构与数据流 (Architecture)
-```mermaid
-graph TD
-    A[BaoStock 主渠道] -->|连接正常| C
-    B[AKShare 备用渠道] -->|BaoStock 不可用时自动切换| C
-    C{智能容灾数据引擎} -->|每日 18:00 增量同步| D(本地 CSV 数据集池)
-    D --> E{核心平差与撮合引擎}
-    E -->|双路价格映射| F[交易录入与结算]
-    E -->|分红事件匹配| G[现金/股数自动派发]
-    F --> H[(SQLite / JSON 记忆库)]
-    H --> I[管理员全量控制台]
-    H --> J[客户只读净值大屏]
-```
----
+## 🚀 快速开始（v2 推荐）
 
-## 🚀 极速部署 (Quick Start)
+### 环境
 
-### 环境依赖
-
-请确保本地已安装 Python 3.9 或以上版本。
+- Python 3.9+
+- Node.js 18+（构建前端）
 
 ```bash
-# 1. 克隆本项目
 git clone https://github.com/Promistars/investment-advisor-manager-system.git
 cd investment-advisor-manager-system
 
-# 2. 安装依赖包
+# Python 依赖（领域层 + Streamlit 遗留 + API）
 pip install -r requirements.txt
+pip install -r backend/requirements.txt
 
-# 3. 启动后台数据增量同步引擎（每日 18:00 自动触发）
-python auto_fetch.py
+# 可选：复制并编辑环境变量（生产环境务必修改 SECRET_KEY）
+cp .env.example .env
 
-# 4. 启动可视化控制台
-streamlit run app.py
+# 前端构建与单端口启动（默认 29996，挂载 /IAMS/）
+cd frontend && npm install && cd ..
+bash restart_web2.sh
 ```
 
-### 服务器长期部署（推荐）
+浏览器访问：`http://127.0.0.1:29996/IAMS/`
 
-**方式 A：systemd 用户服务（v1.3 推荐）**
+开发模式（API :8000 + Vite :5173）：
 
 ```bash
-# 安装并启用 Web + 爬虫 + 每小时探活（需按本机路径修改 unit 内 WorkingDirectory）
+bash start_web2.sh
+```
+
+### 数据抓取
+
+```bash
+python auto_fetch.py          # 后台调度（每日 18:00）
+python -c "import auto_fetch; auto_fetch.fetch_data_now()"  # 立即补抓
+```
+
+### 服务器长期部署
+
+```bash
+# 安装 systemd 用户服务（Web + 爬虫 + 每小时探活）
+# 可按本机设置 CONDA_PYTHON / CONDA_NODE 后再执行
 bash setup_systemd.sh
 
 # 日常重启
 bash restart_all.sh
 ```
 
-**方式 B：nohup 回退**
-
-未执行 `setup_systemd.sh` 时，`restart_all.sh` 自动回退为 nohup 模式。
-
-服务默认监听 `0.0.0.0:29996`。日志：`web_log.txt`、`fetch_log.txt`、`iams_healthcheck.log`（本地生成，不入库）。
-
 ---
 
-## 📂 核心目录结构指南
+## 📂 目录结构
 
 ```text
-├── app.py                  # 系统大厅与登录鉴权网关
-├── pages/
-│   └── analytics.py        # 📈 投顾分析看板与核心撮合引擎 (Main Logic)
-├── auto_fetch.py           # 🕷️ 定时增量抓取调度
-├── stock_fetch.py          # 📡 新浪/东财/BaoStock 统一 K 线引擎
-├── iams_network.py         # 🌐 项目级网络与东财可达性探测
+├── backend/                # FastAPI REST API
+├── frontend/               # React + Vite + TypeScript + Tailwind + ECharts
+├── app.py                  # Streamlit 遗留入口（可选对照）
+├── pages/analytics.py      # Streamlit 看板逻辑（遗留）
+├── portfolio_engine.py     # 统一绩效/持仓引擎
+├── auto_fetch.py           # 定时增量抓取
+├── stock_fetch.py          # 新浪/东财/BaoStock K 线
+├── db_manager.py           # SQLite 用户与交易
+├── restart_web2.sh         # v2 生产启动（推荐）
+├── start_web2.sh           # v2 开发启动
 ├── config/network.env      # 项目代理策略（默认直连）
-├── systemd/                # 用户级 systemd 单元模板
-├── setup_systemd.sh        # 安装 Web/爬虫/探活 timer
-├── iams_healthcheck.sh     # 每小时探活并拉起服务
-├── scripts/run_with_iams_env.sh
-├── db_manager.py           # 💾 SQLite 数据库与 JSON 并行交互接口
-├── restart_all.sh          # 🔄 一键重启（优先 systemd）
-├── CHANGELOG.md            # 版本更新记录
-├── requirements.txt        # 📦 Python 依赖清单
-├── financial_data/         # [系统生成] 个股双路历史 K 线库 (Git Ignore)
-├── dividend_data/          # [系统生成] 历史除权除息事件库 (Git Ignore)
-├── all_indices_data/       # [系统生成] 宽基指数对照库 (Git Ignore)
-└── .gitignore              # 隐私数据与本地缓存隔离墙
+├── systemd/                # systemd 单元模板（@IAMS_ROOT@ 占位符）
+├── financial_data/         # [本地生成，不入库] 个股 K 线
+├── dividend_data/          # [本地生成，不入库] 分红事件
+└── .gitignore              # 数据库 / JSON 配置 / CSV 隔离
 ```
 
 ---
 
-## 💡 最佳实践与注意事项
+## 🔒 隐私与安全
 
-1. **隐私安全**：所有的交易记录（`.db`）与配置清单（`.json`）均已加入 `.gitignore`，**不会上传至云端**，请放心在本地录入真实千万级实盘数据。
-2. **动态添股**：遇到新开仓的股票，无需修改代码，直接在管理员侧边栏【➕ 动态添加新股票标的】中输入中文简称，系统将自动寻址并补齐 2023 年至今的所有 K 线与分红数据。
-3. **客户展示**：点击控制台侧边栏【获取发送给客户的专属汇报链接】，将生成带有鉴权参数的 URL，直接分发给客户阅览（支持一键导出 PDF）。
-4. **数据容灾**：个股日线优先新浪；东财/BaoStock 自动降级。每日 18:00 后手动补抓：
-   ```bash
-   python -c "import auto_fetch; auto_fetch.fetch_data_now()"
-   ```
-5. **版本记录**：详见 [CHANGELOG.md](CHANGELOG.md)。
+以下内容**不会**提交到 GitHub（见 `.gitignore`）：
+
+| 类型 | 示例 |
+|------|------|
+| 数据库 | `*.db`（用户、密码、交易流水） |
+| 本地配置 | `account_config.json`、`user_prefs.json`、`commentaries.json`、`stock_config.json` |
+| 行情数据 | `financial_data/`、`dividend_data/`、`*.csv` |
+| 机密 | `.env`、`secrets.toml`、本地日志 |
+
+首次部署请自行注册账户；生产环境务必在 `.env` 中设置 `IAMS_SECRET_KEY`。
 
 ---
 
-*"在不确定性中寻找确定性，在复利中见证时间的玫瑰。"* —— 敬每一位严谨的交易者。
+## 📜 版本记录
+
+详见 [CHANGELOG.md](CHANGELOG.md)。当前版本：**2.1.0**（`VERSION` 文件）。
+
+Streamlit 临时对照（本地 only）：
+
+```bash
+bash restart_streamlit_temp.sh   # 默认 localhost:29998
+```
+
+---
+
+*"在不确定性中寻找确定性，在复利中见证时间的玫瑰。"*

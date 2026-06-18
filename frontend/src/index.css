@@ -1,0 +1,108 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #fef2f2;
+  --color-brand-100: #fde8e8;
+  --color-brand-500: #dc2626;
+  --color-brand-600: #b91c1c;
+  --color-brand-700: #991b1b;
+  --color-gold-400: #e8c547;
+  --color-gold-500: #c9a227;
+  --color-surface: #fffaf8;
+  --font-sans: "PingFang SC", "Segoe UI", system-ui, -apple-system, sans-serif;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: linear-gradient(180deg, #ffffff 0%, var(--color-surface) 100%);
+  color: #44403c;
+  -webkit-font-smoothing: antialiased;
+}
+
+.card {
+  @apply rounded-2xl border border-brand-100 bg-white shadow-sm;
+}
+
+.btn-primary {
+  @apply inline-flex items-center justify-center rounded-xl bg-gradient-to-br from-brand-600 to-brand-500 border border-gold-500 px-4 py-2.5 text-sm font-semibold text-white cursor-pointer transition hover:brightness-110 hover:shadow-md hover:shadow-brand-600/20 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center rounded-xl border border-brand-100 bg-white px-4 py-2.5 text-sm font-medium text-brand-700 cursor-pointer transition hover:bg-brand-50 hover:shadow-sm active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.input {
+  @apply w-full max-w-full min-w-0 box-border rounded-xl border border-stone-200 bg-stone-50 px-3.5 py-2.5 text-sm outline-none transition focus:border-red-300 focus:ring-2 focus:ring-red-100;
+}
+
+.pnl-up-cn { color: #dc2626; }
+.pnl-down-cn { color: #16a34a; }
+.pnl-up-west { color: #16a34a; }
+.pnl-down-west { color: #dc2626; }
+
+@media print {
+  .no-print { display: none !important; }
+}
+
+@keyframes login-orb-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(2%, -1.5%) scale(1.04); }
+}
+
+@keyframes login-shimmer {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.55; }
+}
+
+.login-screen {
+  background: linear-gradient(
+    155deg,
+    #fffdfb 0%,
+    #fffaf8 28%,
+    #fef7f4 52%,
+    #fdf2ef 78%,
+    #fff9f6 100%
+  );
+}
+
+.login-screen__mesh {
+  background:
+    radial-gradient(ellipse 90% 70% at 92% 8%, rgba(201, 162, 39, 0.22), transparent 58%),
+    radial-gradient(ellipse 75% 55% at 6% 92%, rgba(153, 27, 27, 0.14), transparent 52%),
+    radial-gradient(ellipse 55% 45% at 48% 42%, rgba(232, 197, 71, 0.08), transparent 62%),
+    radial-gradient(ellipse 40% 35% at 78% 68%, rgba(185, 28, 28, 0.06), transparent 55%);
+  animation: login-orb-drift 18s ease-in-out infinite;
+}
+
+.login-card {
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 25px 50px -12px rgba(153, 27, 27, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.login-screen__grid {
+  background-image:
+    linear-gradient(rgba(153, 27, 27, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(153, 27, 27, 0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, black 15%, transparent 72%);
+  mask-image: radial-gradient(ellipse 85% 75% at 50% 40%, black 15%, transparent 72%);
+}
+
+.login-screen__lines {
+  background: repeating-linear-gradient(
+    -38deg,
+    transparent,
+    transparent 72px,
+    rgba(201, 162, 39, 0.04) 72px,
+    rgba(201, 162, 39, 0.04) 73px
+  );
+  animation: login-shimmer 12s ease-in-out infinite;
+}

@@ -10,13 +10,18 @@ all_indices_data/
 dividend_data/
 realtime_data/
 fundamental_data/
+.cache/
 
 # 💡 忽略所有的配置文件和本地数据库日志
 stock_config.json
 account_config.json
 commentaries.json
+user_prefs.json
 *.json
-commentaries.json
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/tsconfig.json
+!frontend/tsconfig.*.json
 
 # 忽略系统隐藏文件
 .DS_Store
@@ -36,13 +41,20 @@ Thumbs.db
 secrets.toml
 .streamlit/secrets.toml
 
-# 📦 虚拟环境
+# 📦 虚拟环境 / Node
 venv/
 env/
 .venv/
 .conda/
+frontend/node_modules/
+frontend/dist/
 
 # 🛑 本地日志（不入库）
 *.log
+web_log.txt
+web_build_log.txt
+fetch_log.txt
+streamlit_temp_log.txt
+iams_healthcheck.log
 
 test_app.py

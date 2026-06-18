@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-WORKDIR=/home/muchenzhang/fnc/IAMS_1.2
+ROOT="$(cd "$(dirname "$0")" && pwd)"
 USER_SYSTEMD="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+PYTHON="${CONDA_PYTHON:-python3}"
+PORT="${IAMS_PORT:-29996}"
 
 echo "=================================================="
 echo " IAMS systemd 托管安装"
@@ -15,11 +17,22 @@ if [ "$(loginctl show-user "$(whoami)" -p Linger --value 2>/dev/null)" != "yes" 
 fi
 
 mkdir -p "$USER_SYSTEMD"
-chmod +x "$WORKDIR/iams_healthcheck.sh"
-cp "$WORKDIR/systemd/"*.service "$WORKDIR/systemd/"*.timer "$USER_SYSTEMD/"
+chmod +x "$ROOT/iams_healthcheck.sh" "$ROOT/scripts/run_iams_web2.sh" "$ROOT/scripts/run_with_iams_env.sh"
+
+install_unit() {
+    local src="$1"
+    local name
+    name="$(basename "$src")"
+    sed -e "s|@IAMS_ROOT@|$ROOT|g" -e "s|@PYTHON@|$PYTHON|g" "$src" > "$USER_SYSTEMD/$name"
+}
+
+for f in "$ROOT/systemd/"*.service "$ROOT/systemd/"*.timer; do
+    [ -f "$f" ] || continue
+    install_unit "$f"
+done
 
 echo "清理旧 nohup 进程，避免与 systemd 重复..."
-ps -ef | grep "[s]treamlit run app.py --server.port 29996" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
+ps -ef | grep "[u]vicorn app.main:app" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 ps -ef | grep "[p]ython auto_fetch.py" | awk '{print $2}' | xargs -r kill -9 2>/dev/null || true
 sleep 1
 
@@ -35,7 +48,7 @@ echo ""
 echo "下次探活时间:"
 systemctl --user list-timers iams-healthcheck.timer --no-pager || true
 echo "=================================================="
-echo " 完成。Web: http://112.49.20.151:29996"
-echo " 探活日志: tail -f $WORKDIR/iams_healthcheck.log"
-echo " 手动探活: $WORKDIR/iams_healthcheck.sh"
+echo " 完成。Web: http://127.0.0.1:$PORT/IAMS/"
+echo " 探活日志: tail -f $ROOT/iams_healthcheck.log"
+echo " 手动探活: $ROOT/iams_healthcheck.sh"
 echo "=================================================="
